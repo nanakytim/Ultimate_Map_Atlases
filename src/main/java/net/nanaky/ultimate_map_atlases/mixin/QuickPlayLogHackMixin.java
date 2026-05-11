@@ -1,0 +1,18 @@
+package net.nanaky.ultimate_map_atlases.mixin;
+
+import net.minecraft.client.quickplay.QuickPlayLog;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import net.nanaky.ultimate_map_atlases.integration.moonlight.ClientMarkers;
+
+@Mixin(targets = {"net.minecraft.client.quickplay.QuickPlayLog$1", "net.minecraft.client.quickplay.QuickPlayLog"})
+public class QuickPlayLogHackMixin {
+
+    @Inject(method = "setWorldData", at = @At("HEAD"))
+    public void associatedFolderNameWithLevelName(QuickPlayLog.Type pType, String pId, String pName, CallbackInfo ci) {
+        ClientMarkers.setWorldFolder(pId, pType.getSerializedName());
+    }
+
+}

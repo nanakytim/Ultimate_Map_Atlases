@@ -1,0 +1,26 @@
+{
+  "minVersion": "0.8",
+  "required": true,
+  "compatibilityLevel": "JAVA_17",
+  "package": "net.nanaky.ultimate_map_atlases.mixin",
+  "mixins": [
+    "CartographyTableMenuMixin",
+    "LecternBlockEntityMixin",
+    "LecternBlockMixin",
+    "MapItemMixin",
+    "MapItemSavedDataAccessor",
+    "MapItemSavedDataMixin",
+    "MixinCartographyTableAbstractContainerMenuSecondSlot",
+    "MixinCartographyTableAbstractContainerMenuSecondSlotMaps",
+    "MixinCartographyTableHandlerFirstSlot"
+  ],
+  "client": [
+    "CartographyTableScreenMixin",
+    "ItemInHandRendererMixin",
+    "LecternRenderStateMixin",
+    "LecternRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

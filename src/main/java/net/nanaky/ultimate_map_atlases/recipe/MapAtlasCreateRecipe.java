@@ -1,0 +1,207 @@
+package net.nanaky.ultimate_map_atlases.recipe;
+
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.NonNullList;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.world.entity.player.StackedItemContents;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.MapItem;
+import net.minecraft.world.item.crafting.CraftingBookCategory;
+import net.minecraft.world.item.crafting.CraftingInput;
+import net.minecraft.world.item.crafting.CustomRecipe;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.PlacementInfo;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.level.Level;
+import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
+import net.nanaky.ultimate_map_atlases.PlatStuff;
+import net.nanaky.ultimate_map_atlases.item.MapAtlasItem;
+import net.nanaky.ultimate_map_atlases.map_collection.IMapCollection;
+import net.nanaky.ultimate_map_atlases.utils.MapAtlasesAccessUtils;
+import net.nanaky.ultimate_map_atlases.utils.MapDataHolder;
+
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.List;
+
+public class MapAtlasCreateRecipe extends CustomRecipe {
+    public static final MapCodec<MapAtlasCreateRecipe> MAP_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+            CraftingBookCategory.CODEC.optionalFieldOf("category", CraftingBookCategory.MISC).forGetter(MapAtlasCreateRecipe::category),
+            Ingredient.CODEC.listOf().fieldOf("ingredients").forGetter(recipe -> recipe.ingredients)
+    ).apply(instance, (category, ingredients) -> new MapAtlasCreateRecipe(category, copyIngredients(ingredients))));
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, MapAtlasCreateRecipe> STREAM_CODEC = StreamCodec.of(
+            MapAtlasCreateRecipe::encode,
+            MapAtlasCreateRecipe::decode
+    );
+
+    public static final RecipeSerializer<MapAtlasCreateRecipe> SERIALIZER = new RecipeSerializer<>(MAP_CODEC, STREAM_CODEC);
+
+    // some logic copied from shapeless recipes
+    private final CraftingBookCategory category;
+    private final NonNullList<Ingredient> ingredients;
+    private final boolean isSimple;
+    private final PlacementInfo placementInfo;
+
+    // to prevent the world from not being unloaded
+    private WeakReference<Level> levelReference = new WeakReference<>(null);
+
+    public MapAtlasCreateRecipe(CraftingBookCategory category, NonNullList<Ingredient> ingredients) {
+        super();
+        this.category = category;
+        this.ingredients = ingredients;
+        this.isSimple = PlatStuff.isSimple(ingredients);
+        this.placementInfo = PlacementInfo.create(List.of(
+                Ingredient.of(Items.SLIME_BALL, Items.HONEY_BOTTLE),
+                Ingredient.of(Items.BOOK)
+        ));
+    }
+
+    public NonNullList<Ingredient> getIngredients() {
+        return ingredients;
+    }
+
+    @Override
+    public boolean matches(CraftingInput inv, Level level) {
+        StackedItemContents stackedcontents = new StackedItemContents();
+        List<ItemStack> inputs = new ArrayList<>();
+        int i = 0;
+        boolean hasMap = false;
+        for (int j = 0; j < inv.size(); ++j) {
+            ItemStack itemstack = inv.getItem(j);
+            // Check for filled map
+            if (MapAtlasesAccessUtils.isValidFilledMap(itemstack)) {
+                if (hasMap || MapItem.getSavedData(itemstack, level) == null) {
+                    return false;
+                }
+                hasMap = true;
+            } 
+            // Check for empty map
+            else if (MapAtlasesAccessUtils.isValidEmptyMap(itemstack)) {
+                if (hasMap) {
+                    return false;
+                }
+                hasMap = true;
+            }
+            else if (!itemstack.isEmpty()) {
+                ++i;
+                if (isSimple)
+                    stackedcontents.accountStack(itemstack, 1);
+                else inputs.add(itemstack);
+            }
+        }
+        boolean matches = i == this.ingredients.size() && hasMap &&
+                (isSimple ? stackedcontents.canCraft(this, null) :
+                        PlatStuff.findMatches(inputs, ingredients));
+
+        if (matches) {
+            levelReference = new WeakReference<>(level);
+        }
+        return matches;
+    }
+
+    @Override
+    public ItemStack assemble(CraftingInput inv) {
+        ItemStack mapItemStack = null;
+        boolean isFilledMap = false;
+        
+        for (var item : inv.items()) {
+            if (MapAtlasesAccessUtils.isValidFilledMap(item) || MapAtlasesAccessUtils.isValidEmptyMap(item)) {
+                mapItemStack = item;
+                isFilledMap = MapAtlasesAccessUtils.isValidFilledMap(item);
+                break;
+            }
+        }
+        
+        Level level = levelReference.get();
+        if (mapItemStack == null || level == null) {
+            return ItemStack.EMPTY;
+        }
+        
+        ItemStack atlas = new ItemStack(MapAtlasesMod.MAP_ATLAS.get());
+        
+        if (isFilledMap) {
+            // Handle filled map (existing logic)
+            Integer mapId = MapAtlasesAccessUtils.getMapId(mapItemStack);
+            if (mapId == null) {
+                MapAtlasesMod.LOGGER.error("MapAtlasCreateRecipe found null Map ID from Filled Map");
+                return ItemStack.EMPTY;
+            }
+            MapDataHolder holder = MapDataHolder.findFromId(level, mapId);
+            if (holder == null) {
+                return ItemStack.EMPTY;
+            }
+            IMapCollection maps = MapAtlasItem.getMaps(atlas, level);
+            MapAtlasItem.setSelectedSlice(atlas, holder.slice);
+            if (!maps.add(mapId, level)) {
+                MapAtlasItem.increaseEmptyMaps(atlas, 1);
+            }
+            MapAtlasItem.increaseEmptyMaps(atlas, 0);
+        } else {
+            // Handle empty map (new logic)
+            MapAtlasItem.increaseEmptyMaps(atlas, 1);
+        }
+        
+        return atlas;
+    }
+
+    @Override
+    public RecipeSerializer<MapAtlasCreateRecipe> getSerializer() {
+        return SERIALIZER;
+    }
+
+    @Override
+    public PlacementInfo placementInfo() {
+        return this.placementInfo;
+    }
+
+    @Override
+    public boolean isSpecial() {
+        return false;
+    }
+
+    @Override
+    public boolean showNotification() {
+        return true;
+    }
+
+    @Override
+    public CraftingBookCategory category() {
+        return category;
+    }
+
+    public boolean canCraftInDimensions(int width, int height) {
+        return width * height >= 3;
+    }
+
+    private static NonNullList<Ingredient> copyIngredients(List<Ingredient> ingredients) {
+        NonNullList<Ingredient> list = NonNullList.create();
+        list.addAll(ingredients);
+        return list;
+    }
+
+    private static MapAtlasCreateRecipe decode(RegistryFriendlyByteBuf buffer) {
+        CraftingBookCategory craftingbookcategory = buffer.readEnum(CraftingBookCategory.class);
+
+        int size = buffer.readVarInt();
+        NonNullList<Ingredient> ingredients = NonNullList.create();
+        for (int i = 0; i < size; i++) {
+            ingredients.add(Ingredient.CONTENTS_STREAM_CODEC.decode(buffer));
+        }
+
+        return new MapAtlasCreateRecipe(craftingbookcategory, ingredients);
+    }
+
+    private static void encode(RegistryFriendlyByteBuf buffer, MapAtlasCreateRecipe recipe) {
+        buffer.writeEnum(recipe.category());
+
+        buffer.writeVarInt(recipe.ingredients.size());
+        for (Ingredient ingredient : recipe.ingredients) {
+            Ingredient.CONTENTS_STREAM_CODEC.encode(buffer, ingredient);
+        }
+    }
+
+}

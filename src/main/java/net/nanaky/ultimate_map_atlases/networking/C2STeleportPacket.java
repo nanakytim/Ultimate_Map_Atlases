@@ -1,0 +1,111 @@
+package net.nanaky.ultimate_map_atlases.networking;
+
+import net.nanaky.moonlight.api.platform.network.ChannelHandler;
+import net.nanaky.moonlight.api.platform.network.Message;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Relative;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.Heightmap;
+import org.jetbrains.annotations.Nullable;
+import net.nanaky.ultimate_map_atlases.PlatStuff;
+import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+
+import java.util.EnumSet;
+import java.util.Locale;
+import java.util.Optional;
+
+public class C2STeleportPacket implements Message {
+
+
+    private final int x;
+    private final int z;
+    private final Integer y;
+    private final ResourceKey<Level> dimension;
+
+    public C2STeleportPacket(FriendlyByteBuf buf) {
+        this.x = buf.readVarInt();
+        this.z = buf.readVarInt();
+        this.y = buf.readOptional(FriendlyByteBuf::readVarInt).orElse(null);
+        this.dimension = buf.readResourceKey(Registries.DIMENSION);
+    }
+
+    public C2STeleportPacket(int x, int z, @Nullable Integer y, ResourceKey<Level> dimension) {
+        this.x = x;
+        this.z = z;
+        this.y = y;
+        this.dimension = dimension;
+    }
+
+    private static boolean performTeleport(ServerPlayer player, ServerLevel pLevel,
+                                           double pX, double pY, double pZ
+
+    ) {
+        var result = PlatStuff.fireTeleportEvent(player, pX, pY, pZ);
+        if (result.getFirst()) return false;
+        pX = result.getSecond().x;
+        pY = result.getSecond().y;
+        pZ = result.getSecond().z;
+        BlockPos blockpos = BlockPos.containing(pX, pY, pZ);
+        if (Level.isInSpawnableBounds(blockpos)) {
+            if (player.teleportTo(pLevel, pX, pY, pZ, EnumSet.noneOf(Relative.class),
+                    player.getYRot(), player.getXRot(), false)) {
+
+                if (!player.isFallFlying()) {
+                    player.setDeltaMovement(player.getDeltaMovement().multiply(1.0D, 0, 1.0D).add(0, -5, 0));
+                    player.setOnGround(true);
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String formatDouble(double pValue) {
+        return String.format(Locale.ROOT, "%f", pValue);
+    }
+
+    @Override
+    public void writeToBuffer(FriendlyByteBuf buf) {
+        buf.writeVarInt(x);
+        buf.writeVarInt(z);
+        buf.writeOptional(Optional.ofNullable(y), FriendlyByteBuf::writeVarInt);
+        buf.writeResourceKey(dimension);
+    }
+
+    @Override
+    public void handle(ChannelHandler.Context context) {
+        if (!(context.getSender() instanceof ServerPlayer player)) return;
+        if (!player.isCreative() || !MapAtlasesConfig.creativeTeleport.get()) return;
+
+        var server = player.level().getServer();
+        if (server == null) return;
+
+        ServerLevel level = server.getLevel(dimension);
+        if (level == null) return;
+
+        int y;
+        if (this.y == null) {
+            y = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
+        } else {
+            y = this.y;
+        }
+
+
+        if (performTeleport(player, level, x, y, z)) {
+            player.sendSystemMessage(Component.translatable("commands.teleport.success.location.single",
+                    player.getDisplayName(),
+                    formatDouble(x),
+                    formatDouble(y),
+                    formatDouble(z)));
+        } else {
+            player.sendSystemMessage(Component.translatable("commands.teleport.invalidPosition"));
+        }
+
+    }
+}

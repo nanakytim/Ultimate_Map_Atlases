@@ -1,0 +1,270 @@
+package net.nanaky.ultimate_map_atlases.map_collection;
+
+import com.google.common.base.Preconditions;
+import net.minecraft.util.Util;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
+import org.jetbrains.annotations.Nullable;
+import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
+import net.nanaky.ultimate_map_atlases.utils.MapDataHolder;
+import net.nanaky.ultimate_map_atlases.utils.MapType;
+import net.nanaky.ultimate_map_atlases.utils.Slice;
+
+import java.util.*;
+import java.util.function.Predicate;
+
+// The purpose of this object is to save a datastructures with all available maps so we dont have to keep deserializing nbt
+public class MapCollection implements IMapCollection {
+
+    public static final String MAP_LIST_NBT = "maps";
+
+    private final Map<MapKey, MapDataHolder> maps = new HashMap<>();
+    private final Set<Integer> ids = new HashSet<>();
+    //available dimensions and slices
+    private final Map<ResourceKey<Level>, Map<MapType, TreeSet<Integer>>> dimensionSlices = new HashMap<>();
+    private byte scale = 0;
+    private CompoundTag lazyNbt = null;
+    // list of ids that have not been received yet
+    private final Set<Integer> notSyncedIds = new HashSet<>();
+
+
+    public boolean isInitialized() {
+        return lazyNbt == null;
+    }
+
+    private void assertInitialized() {
+        Preconditions.checkState(this.lazyNbt == null, "map collection capability was not initialized");
+    }
+
+    // if a duplicate exists its likely that its data was not synced yet
+    @Override
+    public void addNotSynced(Level level) {
+        if (notSyncedIds.isEmpty()) {
+            return;
+        }
+        var pending = List.copyOf(notSyncedIds);
+        for (int id : pending) {
+            if (add(id, level)) {
+                notSyncedIds.remove(id);
+            }
+        }
+    }
+
+    // we need level context
+    public void initialize(Level level) {
+        if (lazyNbt != null) {
+            int[] array = lazyNbt.getIntArray(MAP_LIST_NBT).orElseGet(() -> new int[0]);
+            lazyNbt = null;
+            for (int i : array) {
+                add(i, level);
+            }
+        }
+    }
+
+    //@Override
+    public CompoundTag serializeNBT() {
+        if (!isInitialized()) return lazyNbt;
+        CompoundTag c = new CompoundTag();
+        c.putIntArray(MAP_LIST_NBT, getAllIds());
+        return c;
+    }
+
+    @Override
+    public int[] getAllIds() {
+        if (!isInitialized()) return lazyNbt.getIntArray(MAP_LIST_NBT).orElseGet(() -> new int[0]);
+        return ids.stream().sorted().mapToInt(Integer::intValue).toArray();
+    }
+
+    public boolean hasId(int id) {
+        assertInitialized();
+        return ids.contains(id);
+    }
+
+    //@Override
+    public void deserializeNBT(CompoundTag c) {
+        lazyNbt = c.copy();
+    }
+
+    @Override
+    public int getCount() {
+        assertInitialized();
+        return ids.size();
+    }
+
+    public boolean isEmpty() {
+        assertInitialized();
+        return maps.isEmpty();
+    }
+
+    @Override
+    public boolean add(int intId, Level level) {
+        assertInitialized();
+
+        MapDataHolder found = MapDataHolder.findFromId(level, intId);
+        if (found == null) {
+            if (ids.contains(intId)) {
+                return false;
+            }
+            // Keep unresolved ids around on both sides so atlas history is not discarded during reloads.
+            // The actual map data can become available later and be promoted via addNotSynced.
+            if (level instanceof ServerLevel) {
+                MapAtlasesMod.LOGGER.warn("Map with id {} not yet available in level {}; keeping it pending", intId, level.dimension().identifier());
+            }
+            ids.add(intId);
+            notSyncedIds.add(intId);
+            return false;
+        }
+
+        if (this.isEmpty() && found != null) {
+            scale = found.data.scale;
+        }
+
+        MapItemSavedData d = found.data;
+
+        if (d != null && d.scale == scale) {
+            MapKey key = found.makeKey();
+            MapDataHolder existing = maps.get(key);
+            boolean knownId = ids.contains(intId);
+            boolean pendingId = notSyncedIds.contains(intId);
+
+            //from now on we assume that all client maps cant have their center and data unfilled
+            if (existing != null) {
+                if (existing.id == intId || ids.contains(intId)) {
+                    notSyncedIds.remove(intId);
+                    return false;
+                }
+                MapAtlasesMod.LOGGER.error("Duplicate map key {} found in level {}", key, level.dimension().identifier());
+                return false;
+            }
+            if (!knownId && !ids.add(intId)) {
+                notSyncedIds.remove(intId);
+                return false;
+            }
+            if (knownId && !pendingId) {
+                return false;
+            }
+            maps.put(key, found);
+            notSyncedIds.remove(intId);
+            addToDimensionMap(key);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean remove(MapDataHolder map) {
+        assertInitialized();
+        boolean success = ids.remove(map.id);
+        if (maps.remove(map.makeKey()) != null) {
+            dimensionSlices.clear();
+            for (var j : maps.keySet()) {
+                addToDimensionMap(j);
+            }
+        }
+        return success;
+    }
+
+    private void addToDimensionMap(MapKey j) {
+        dimensionSlices.computeIfAbsent(j.slice().dimension(), d -> new EnumMap<>(MapType.class))
+                .computeIfAbsent(j.slice().type(), a -> new TreeSet<>())
+                .add(j.slice().height() == null ? Integer.MAX_VALUE : j.slice().height());
+    }
+
+    @Override
+    public byte getScale() {
+        assertInitialized();
+        return scale;
+    }
+
+    @Override
+    public Collection<MapType> getAvailableTypes(ResourceKey<Level> dimension) {
+        assertInitialized();
+        var mapTypeTreeSetMap = dimensionSlices.get(dimension);
+        if (mapTypeTreeSetMap != null) return mapTypeTreeSetMap.keySet();
+        else return List.of();
+    }
+
+
+    @Override
+    public Collection<ResourceKey<Level>> getAvailableDimensions() {
+        assertInitialized();
+        return dimensionSlices.keySet();
+    }
+
+    private static final TreeSet<Integer> TOP = Util.make(() -> {
+        var t = new TreeSet<Integer>();
+        t.add(Integer.MAX_VALUE);
+        return t;
+    });
+
+    @Override
+    public TreeSet<Integer> getHeightTree(ResourceKey<Level> dimension, MapType kind) {
+        assertInitialized();
+        var d = dimensionSlices.get(dimension);
+        if (d != null) {
+            return d.getOrDefault(kind, TOP);
+        }
+        return TOP;
+    }
+
+    @Override
+    public List<MapDataHolder> getAll() {
+        assertInitialized();
+        return new ArrayList<>(maps.values());
+    }
+
+    @Override
+    public List<MapDataHolder> selectSection(Slice slice) {
+        assertInitialized();
+        return maps.entrySet().stream().filter(e -> e.getKey().isSameSlice(slice))
+                .map(Map.Entry::getValue).toList();
+    }
+
+    @Override
+    public List<MapDataHolder> filterSection(Slice slice, Predicate<MapItemSavedData> predicate) {
+        assertInitialized();
+        return new ArrayList<>(maps.entrySet().stream().filter(e -> e.getKey().isSameSlice(slice)
+                        && predicate.test(e.getValue().data))
+                .map(Map.Entry::getValue).toList());
+    }
+
+    @Nullable
+    @Override
+    public MapDataHolder select(MapKey key) {
+        assertInitialized();
+        return maps.get(key);
+    }
+
+    @Nullable
+    @Override
+    public MapDataHolder getClosest(double x, double z, Slice slice) {
+        assertInitialized();
+        MapDataHolder minDistState = null;
+        for (var e : maps.entrySet()) {
+            var key = e.getKey();
+            if (key.isSameSlice(slice)) {
+                if (minDistState == null) {
+                    minDistState = e.getValue();
+                    continue;
+                }
+                if (distSquare(minDistState.data, x, z) > distSquare(e.getValue().data, x, z)) {
+                    minDistState = e.getValue();
+                }
+            }
+        }
+        return minDistState;
+    }
+
+    public static double distSquare(MapItemSavedData mapState, double x, double z) {
+        return Mth.square(mapState.centerX - x) + Mth.square(mapState.centerZ - z);
+    }
+
+
+    public boolean hasOneSlice() {
+        return maps.keySet().stream().anyMatch(k -> k.slice().height() != null);
+    }
+}

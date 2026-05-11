@@ -1,0 +1,204 @@
+package net.nanaky.ultimate_map_atlases.map_collection;
+
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
+import org.jetbrains.annotations.Nullable;
+import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
+import net.nanaky.ultimate_map_atlases.map_collection.IMapCollection;
+import net.nanaky.ultimate_map_atlases.map_collection.MapCollection;
+import net.nanaky.ultimate_map_atlases.map_collection.MapKey;
+import net.nanaky.ultimate_map_atlases.utils.ItemStackData;
+import net.nanaky.ultimate_map_atlases.utils.MapDataHolder;
+import net.nanaky.ultimate_map_atlases.utils.MapType;
+import net.nanaky.ultimate_map_atlases.utils.Slice;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.TreeSet;
+import java.util.function.Predicate;
+
+public class IMapCollectionImpl implements IMapCollection {
+
+    private static final IdentityHashMap<ItemStack, IMapCollectionImpl> INSTANCES = new IdentityHashMap<>();
+
+    @Nullable
+    private MapCollection instance;
+    private final ItemStack stack;
+
+    public IMapCollectionImpl(ItemStack stack) {
+        this.stack = stack;
+    }
+
+    public static IMapCollection get(ItemStack stack, Level level) {
+        return INSTANCES.computeIfAbsent(stack, IMapCollectionImpl::new).getOrCreateInstance(level);
+    }
+
+    protected IMapCollection getOrCreateInstance(Level level) {
+        if (instance == null || !matchesStackData()) {
+            instance = new MapCollection();
+            instance.deserializeNBT(serializedStateFromStack());
+            instance.initialize(level);
+            migrateLegacyMapIds();
+        }
+        return this;
+    }
+
+    private CompoundTag serializedStateFromStack() {
+        CompoundTag tag = new CompoundTag();
+        tag.putIntArray(MapCollection.MAP_LIST_NBT, getPersistedMapIds());
+        return tag;
+    }
+
+    private int[] getPersistedMapIds() {
+        int[] componentIds = getComponentIds();
+        CompoundTag legacyTag = ItemStackData.getTag(stack);
+        int[] legacyIds = legacyTag != null ? legacyTag.getIntArray(MapCollection.MAP_LIST_NBT).orElseGet(() -> new int[0]) : new int[0];
+        if (legacyIds.length == 0) {
+            return componentIds;
+        }
+
+        TreeSet<Integer> merged = new TreeSet<>();
+        Arrays.stream(componentIds).forEach(merged::add);
+        Arrays.stream(legacyIds).forEach(merged::add);
+        return merged.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    private int[] getComponentIds() {
+        int[] ids = stack.get(MapAtlasesMod.ATLAS_MAP_IDS.get());
+        return ids == null ? new int[0] : Arrays.copyOf(ids, ids.length);
+    }
+
+    private void migrateLegacyMapIds() {
+        CompoundTag legacyTag = ItemStackData.getTag(stack);
+        if (legacyTag == null || !legacyTag.contains(MapCollection.MAP_LIST_NBT)) {
+            return;
+        }
+        int[] mergedIds = getPersistedMapIds();
+        stack.set(MapAtlasesMod.ATLAS_MAP_IDS.get(), Arrays.copyOf(mergedIds, mergedIds.length));
+        ItemStackData.update(stack, tag -> tag.remove(MapCollection.MAP_LIST_NBT));
+    }
+
+    private boolean matchesStackData() {
+        if (instance == null) {
+            return false;
+        }
+        return Arrays.equals(getPersistedMapIds(), instance.getAllIds());
+    }
+
+    private void markDirty() {
+        if (instance != null) {
+            stack.set(MapAtlasesMod.ATLAS_MAP_IDS.get(), Arrays.copyOf(instance.getAllIds(), instance.getAllIds().length));
+        }
+    }
+
+    @Override
+    public boolean add(int mapId, Level level) {
+        if (instance != null) {
+            int[] before = instance.getAllIds();
+            boolean ret = instance.add(mapId, level);
+            if (!Arrays.equals(before, instance.getAllIds())) {
+                markDirty();
+            }
+            return ret;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean remove(MapDataHolder obj) {
+        if (instance != null) {
+            boolean ret = instance.remove(obj);
+            if (ret) {
+                markDirty();
+            }
+            return ret;
+        }
+        return false;
+    }
+
+    @Override
+    public int getCount() {
+        return instance == null ? 0 : instance.getCount();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return instance == null || instance.isEmpty();
+    }
+
+    @Override
+    public byte getScale() {
+        return instance == null ? 0 : instance.getScale();
+    }
+
+    @Override
+    public int[] getAllIds() {
+        return instance == null ? new int[0] : instance.getAllIds();
+    }
+
+    @Override
+    public boolean hasId(int id) {
+        return instance != null && instance.hasId(id);
+    }
+
+    @Override
+    public Collection<ResourceKey<Level>> getAvailableDimensions() {
+        return instance == null ? List.of() : instance.getAvailableDimensions();
+    }
+
+    @Override
+    public Collection<MapType> getAvailableTypes(ResourceKey<Level> dimension) {
+        return instance == null ? List.of() : instance.getAvailableTypes(dimension);
+    }
+
+    @Override
+    public TreeSet<Integer> getHeightTree(ResourceKey<Level> dimension, MapType type) {
+        return instance == null ? new TreeSet<>() : instance.getHeightTree(dimension, type);
+    }
+
+    @Override
+    public List<MapDataHolder> selectSection(Slice slice) {
+        return instance == null ? List.of() : instance.selectSection(slice);
+    }
+
+    @Override
+    public List<MapDataHolder> filterSection(Slice slice, Predicate<MapItemSavedData> predicate) {
+        return instance == null ? List.of() : instance.filterSection(slice, predicate);
+    }
+
+    @Override
+    public MapDataHolder select(MapKey key) {
+        return instance == null ? null : instance.select(key);
+    }
+
+    @Override
+    public @Nullable MapDataHolder getClosest(double x, double z, Slice slice) {
+        return instance == null ? null : instance.getClosest(x, z, slice);
+    }
+
+    @Override
+    public List<MapDataHolder> getAll() {
+        return instance == null ? List.of() : instance.getAll();
+    }
+
+    @Override
+    public void addNotSynced(Level level) {
+        if (instance != null) {
+            int[] before = instance.getAllIds();
+            instance.addNotSynced(level);
+            if (!Arrays.equals(before, instance.getAllIds())) {
+                markDirty();
+            }
+        }
+    }
+
+    @Override
+    public boolean hasOneSlice() {
+        return instance != null && instance.hasOneSlice();
+    }
+}

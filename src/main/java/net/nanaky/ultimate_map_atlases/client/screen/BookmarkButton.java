@@ -1,0 +1,60 @@
+package net.nanaky.ultimate_map_atlases.client.screen;
+
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.Component;
+
+import static net.nanaky.ultimate_map_atlases.client.MapAtlasesClient.ATLAS_BACKGROUND_TEXTURE;
+
+public abstract class BookmarkButton extends AbstractWidget {
+
+    private final int xOff;
+    private final int yOff;
+    protected final AtlasOverviewScreen parentScreen;
+    protected boolean selected = true;
+
+    protected BookmarkButton(int pX, int pY, int width, int height, int xOff, int yOff, AtlasOverviewScreen screen) {
+        super(pX, pY,
+                width, height,
+                Component.empty());
+        this.xOff = xOff;
+        this.yOff = yOff;
+        this.parentScreen = screen;
+    }
+
+    public void setSelected(boolean selected) {
+        this.selected = selected;
+    }
+
+    public boolean selected() {
+        return this.selected;
+    }
+
+    @Override
+    protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        if (!visible || !active) return;
+        graphics.blit(RenderPipelines.GUI_TEXTURED, ATLAS_BACKGROUND_TEXTURE,
+                this.getX(), this.getY(), xOff,
+                yOff + (this.selected ? this.height : 0),
+                this.width, this.height, 256, 256);
+        if (parentScreen.isEditingText()) isHovered = false; //cancel tooltip
+    }
+
+    @Override
+    protected void updateWidgetNarration(NarrationElementOutput pNarrationElementOutput) {
+
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+        this.visible = active;
+        this.setTooltip(active ? createTooltip() : null);
+    }
+
+    public Tooltip createTooltip() {
+        return null;
+    }
+}
