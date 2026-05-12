@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "${mod_id}",
-  "version": "${mod_version}",
+  "version": "26.1",
   "name": "${mod_name}",
   "description": "${mod_description}",
   "authors": [
@@ -26,8 +26,7 @@
     ]
   },
   "mixins": [
-    "${mod_id}.mixins.json",
-    "${mod_id}-common.mixins.json"
+    "ultimate_map_atlases.mixins.json"
   ],
   "depends": {
     "fabricloader": "*",

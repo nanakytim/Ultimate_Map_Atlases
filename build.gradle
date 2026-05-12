@@ -3,7 +3,6 @@ plugins {
 }
 
 group = project.mod_group_id
-version = project.mod_version
 
 repositories {
     mavenCentral()
@@ -15,7 +14,7 @@ repositories {
 }
 
 base {
-    archivesName = "${project.mod_id}-fabric"
+    archivesName = "${project.mod_id}-26.1"
 }
 
 java {
@@ -72,7 +71,6 @@ processResources {
             minecraft_max_version: minecraft_max_version,
             mod_id               : mod_id,
             mod_name             : mod_name,
-            mod_version          : mod_version,
             mod_license          : mod_license,
             mod_authors          : mod_authors,
             mod_description      : mod_description,

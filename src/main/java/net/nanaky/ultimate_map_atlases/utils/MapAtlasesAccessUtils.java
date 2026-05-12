@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
 import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
 import net.nanaky.ultimate_map_atlases.item.MapAtlasItem;
+import net.nanaky.ultimate_map_atlases.mixin.MapItemSavedDataAccessor;
 import net.nanaky.ultimate_map_atlases.networking.MapAtlasesNetworking;
 import net.nanaky.ultimate_map_atlases.networking.S2CMapPacketWrapper;
 
@@ -138,5 +139,21 @@ public class MapAtlasesAccessUtils {
                 MapAtlasesNetworking.CHANNEL.sendToClientPlayer(player, new S2CMapPacketWrapper(holder.data, pp));
             }
         }
+    }
+
+    public static void forceFullResync(MapDataHolder holder, ServerPlayer player, ItemStack atlas) {
+        // Step 1: ensure this player has a HoldingPlayer entry and decorations are current
+        MapAtlasesMod.setMapInInventoryHack(TriState.SET_TRUE);
+        holder.data.tickCarriedBy(player, atlas, null);
+        MapAtlasesMod.setMapInInventoryHack(TriState.PASS);
+
+        // Step 2: mark the full 128×128 pixel range dirty for every current HoldingPlayer,
+        // including the one just created above. Two corner calls expand the rect to [0–127, 0–127].
+        MapItemSavedDataAccessor accessor = (MapItemSavedDataAccessor) holder.data;
+        accessor.invokeSetColorsDirty(0, 0);
+        accessor.invokeSetColorsDirty(127, 127);
+
+        // Step 3: send — dirty region is now guaranteed non-empty
+        syncMapDataToClient(holder, player);
     }
 }

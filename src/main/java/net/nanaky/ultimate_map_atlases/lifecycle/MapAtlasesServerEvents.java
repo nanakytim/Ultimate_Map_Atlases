@@ -425,9 +425,7 @@ public class MapAtlasesServerEvents {
         IMapCollection maps = MapAtlasItem.getMaps(atlas, level);
         maps.addNotSynced(level);
         for (var mapInfo : maps.getAll()) {
-            mapInfo.data.setDirty();
-            mapInfo.updateMap(player);
-            MapAtlasesAccessUtils.updateMapDataAndSync(mapInfo, player, atlas, TriState.SET_TRUE);
+            MapAtlasesAccessUtils.forceFullResync(mapInfo, player, atlas);
         }
     }
 
