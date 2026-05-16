@@ -38,9 +38,9 @@ public class MapAtlasesServerEvents {
         private static final Comparator<MapUpdateTicket> COMPARATOR = Comparator.comparingDouble(MapUpdateTicket::getPriority);
 
         private final MapDataHolder holder;
-        private int waitTime = 20; //set to zero when this is updated.
+        private int waitTime = 20;
         private double lastDistance = 1000000;
-        private double currentPriority; //bigger the better
+        private double currentPriority;
         private boolean hasBlankPixels = true;
         private int lastI = 0;
         private final float lowUpdateWeight;
@@ -49,7 +49,7 @@ public class MapAtlasesServerEvents {
             this.holder = data;
             this.updateHasBlankPixels();
             if (data.type == MapType.VANILLA && data.slice.height() != null) {
-                hasBlankPixels = false; //hack since these can have blank pixels when populated
+                hasBlankPixels = false;
                 lowUpdateWeight = 0.6f;
             } else lowUpdateWeight = 0.15f;
         }
@@ -61,11 +61,11 @@ public class MapAtlasesServerEvents {
         public void updatePriority(int px, int pz) {
             this.waitTime++;
             double distSquared = Mth.lengthSquared(px - holder.data.centerX, pz - holder.data.centerZ);
-            double movingDistanceWeight = 1; // Adjust this based on your preference
-            double staticDistanceWeight = 5000; // Adjust this based on your preference
-            double waitTimeWeight = 1; // Adjust this based on your preference
+            double movingDistanceWeight = 1;
+            double staticDistanceWeight = 5000;
+            double waitTimeWeight = 1;
 
-            double deltaDist = (lastDistance - distSquared); //for maps getting closer
+            double deltaDist = (lastDistance - distSquared);
             this.currentPriority = (movingDistanceWeight * deltaDist) + (waitTimeWeight * this.waitTime * this.waitTime) + (staticDistanceWeight * Mth.fastInvSqrt(distSquared));
             this.lastDistance = distSquared;
         }
@@ -231,7 +231,7 @@ public class MapAtlasesServerEvents {
                 totalWeight += ticket.getUpdateFrequencyWeight();
             }
         }
-        float callsPerTick = totalWeight / (nearbyExistentMaps.size()); // default with nine empty maps around
+        float callsPerTick = totalWeight / (nearbyExistentMaps.size());
         float counter = tup.getA() + callsPerTick;
         boolean shouldUpdate = false;
         if (counter >= 1) {

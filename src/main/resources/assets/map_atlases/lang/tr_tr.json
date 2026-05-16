@@ -32,7 +32,7 @@
   "message.map_atlases.shear": "Haritayı Kaldır",
   "message.map_atlases.shear.info": "Kaldırmak için haritaya tıkla",
   "message.map_atlases.marker_name": "İşaret Adı",
-  "message.map_atlases.map_name": "Harita: ",
+  "message.map_atlases.map_name": "Harita: %s",
   "message.map_atlases.map_scale": "1:%dx",
   "message.map_atlases.map_index": "%s",
   "message.map_atlases.slice_height": "Y: %s",

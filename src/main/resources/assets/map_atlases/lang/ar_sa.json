@@ -32,7 +32,7 @@
   "message.map_atlases.shear": "إزالة خريطة",
   "message.map_atlases.shear.info": "انقر على خريطة لإزالتها",
   "message.map_atlases.marker_name": "اسم العلامة",
-  "message.map_atlases.map_name": "خريطة: ",
+  "message.map_atlases.map_name": "خريطة: %s",
   "message.map_atlases.map_scale": "1:%dx",
   "message.map_atlases.map_index": "%s",
   "message.map_atlases.slice_height": "Y: %s",

@@ -255,7 +255,7 @@ public class ClientMarkers {
             if (existingIds.contains(marker.key())) continue;
 
             if (level != null && level.isLoaded(marker.pos())) {
-                BlockPos actualPos = C2SToggleBlockMarkerPacket.blockPosFromKey(marker.key()); // correct Y
+                BlockPos actualPos = C2SToggleBlockMarkerPacket.blockPosFromKey(marker.key());
                 BlockState state = level.getBlockState(actualPos);
                 boolean valid = (state.getBlock() instanceof BedBlock
                                 && state.getValue(BlockStateProperties.BED_PART) == BedPart.HEAD)

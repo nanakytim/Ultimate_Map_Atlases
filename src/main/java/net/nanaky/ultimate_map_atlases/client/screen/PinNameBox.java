@@ -106,9 +106,9 @@ public class PinNameBox extends EditBox {
         if (scrollVisibleCounter < 10 && index != displayIndex) {
         } else if (scrollVisibleCounter > 0) scrollVisibleCounter--;
         if (scrollVisibleCounter == 0 && scrollPopInAnimation > 0) {
-            scrollPopInAnimation = smoothStep(scrollPopInAnimation, 0, popInSpeed); // Smoothly interpolate towards 0
+            scrollPopInAnimation = smoothStep(scrollPopInAnimation, 0, popInSpeed);
         } else if (scrollVisibleCounter != 0 && scrollPopInAnimation < 1) {
-            scrollPopInAnimation = smoothStep(scrollPopInAnimation, 1.0f, popOutSpeed); // Smoothly interpolate back towards 1
+            scrollPopInAnimation = smoothStep(scrollPopInAnimation, 1.0f, popOutSpeed);
         }
     }
 

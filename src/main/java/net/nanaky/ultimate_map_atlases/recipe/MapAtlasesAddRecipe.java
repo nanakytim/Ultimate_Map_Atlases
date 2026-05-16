@@ -71,7 +71,7 @@ public class MapAtlasesAddRecipe extends CustomRecipe {
 
         int totalMaps = emptyMaps + filledMaps.size();
         if (atlas.isEmpty() || stickyCount == 0 || totalMaps == 0) return false;
-        if (stickyCount != totalMaps) return false; // sticky must match maps exactly
+        if (stickyCount != totalMaps) return false;
 
         IMapCollection maps = MapAtlasItem.getMaps(atlas, level);
         int mapCount = maps.getCount() + MapAtlasItem.getEmptyMaps(atlas);

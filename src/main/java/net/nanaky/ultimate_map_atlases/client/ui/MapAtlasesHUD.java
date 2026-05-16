@@ -34,6 +34,7 @@ import net.nanaky.ultimate_map_atlases.map_collection.MapKey;
 import net.nanaky.ultimate_map_atlases.utils.MapDataHolder;
 import net.nanaky.ultimate_map_atlases.utils.Slice;
 
+import java.util.List;
 import java.util.Objects;
 
 import static net.nanaky.ultimate_map_atlases.client.MapAtlasesClient.MAP_HUD_BACKGROUND_TEXTURE;
@@ -46,6 +47,8 @@ public class MapAtlasesHUD extends AbstractAtlasWidget implements HudElement {
     /** Pixels the minimap is pushed down to make room for the biome label above it. */
     private static final int BIOME_ABOVE_OFFSET = 12;
 
+    private static final List<String> DIRECTIONS = List.of("S", "SW", "W", "NW", "N", "NE", "E", "SE", "S");
+
     private final Minecraft mc;
 
     private boolean needsInit = true;
@@ -56,7 +59,6 @@ public class MapAtlasesHUD extends AbstractAtlasWidget implements HudElement {
     private IMapCollection currentMaps;
 
     private float globalScale = 1;
-    private boolean displaysY = true;
 
     public MapAtlasesHUD() {
         super(1);
@@ -97,7 +99,6 @@ public class MapAtlasesHUD extends AbstractAtlasWidget implements HudElement {
         this.rotatesWithPlayer = hasCompass(mc.player);
         this.globalScale = (float) (double) MapAtlasesClientConfig.miniMapScale.get();
         this.currentMaps = MapAtlasItem.getMaps(currentAtlas, mc.level);
-        this.displaysY = !MapAtlasesClientConfig.yOnlyWithSlice.get() || currentMaps.hasOneSlice();
         this.drawBigPlayerMarker = followingPlayer;
         this.drawMapDecorationsFallback = true;
     }
@@ -177,8 +178,6 @@ public class MapAtlasesHUD extends AbstractAtlasWidget implements HudElement {
         y -= 12;
         }
 
-        // Push the minimap down to leave space for the biome label above it.
-        // Only apply the offset when the biome display is enabled.
         if (MapAtlasesClientConfig.drawMinimapBiome.get()) {
             if (anchorLocation.isUp) {
                 y += BIOME_ABOVE_OFFSET;
@@ -295,18 +294,12 @@ public class MapAtlasesHUD extends AbstractAtlasWidget implements HudElement {
         int textHeightOffset = 2;
         int actualBgSize = (int) (BG_SIZE * globalScale);
 
-        // Draw biome label above the minimap background.
         if (MapAtlasesClientConfig.drawMinimapBiome.get()) {
             pose.pushMatrix();
             if (!anchorLocation.isUp) {
-                // When anchored to the bottom the minimap was shifted up, so place
-                // the biome label below the minimap (which visually is "above" the
-                // original anchor edge).
                 pose.translate(0, BG_SIZE + BIOME_ABOVE_OFFSET + 2);
             }
 
-            // Use a wider maxWidth so long biome names don't shrink as aggressively.
-            // targetWidth stays at actualBgSize so the text remains centred over the minimap.
             int biomeMaxWidth = actualBgSize * 3;
             drawMapComponentBiome(graphics, mc.font, x, (int) (y - BIOME_ABOVE_OFFSET + 2),
                     actualBgSize, biomeMaxWidth, textScaling, mc.player.blockPosition(), mc.level);
@@ -322,19 +315,19 @@ public class MapAtlasesHUD extends AbstractAtlasWidget implements HudElement {
         boolean global = MapAtlasesClientConfig.drawMinimapCoords.get();
         boolean local = MapAtlasesClientConfig.drawMinimapChunkCoords.get();
         if (global || local) {
-            BlockPos pos = new BlockPos(new Vec3i(
-                    towardsZero(mc.player.position().x),
-                    towardsZero(mc.player.position().y),
-                    towardsZero(mc.player.position().z)));
-            if (global) {
-                drawMapComponentCoords(graphics, font, x, (int) (y + BG_SIZE + (textHeightOffset / globalScale)),
-                        actualBgSize, textScaling, pos, false);
-                textHeightOffset += (int) (10 * textScaling);
-            }
-            if (local) {
-                drawMapComponentCoords(graphics, font, x, (int) (y + BG_SIZE + (textHeightOffset / globalScale)),
-                        actualBgSize, textScaling, pos, true);
-                textHeightOffset += (int) (10 * textScaling);
+            if (hasCompass(mc.player)) {
+                BlockPos pos = new BlockPos(new Vec3i(
+                        towardsZero(mc.player.position().x),
+                        towardsZero(mc.player.position().y),
+                        towardsZero(mc.player.position().z)));
+                if (global) {
+                    drawMapComponentCoords(graphics, font, screenWidth, x, textScaling, pos, false);
+                    textHeightOffset += 10;
+                }
+                if (local) {
+                    drawMapComponentCoords(graphics, font, screenWidth, x, textScaling, pos, true);
+                    textHeightOffset += 10;
+                }
             }
         }
 
@@ -342,12 +335,10 @@ public class MapAtlasesHUD extends AbstractAtlasWidget implements HudElement {
     }
 
     private boolean hasCompass(Player player) {
-        // Main + offhand
         if (isVanillaCompass(player.getMainHandItem()) || isVanillaCompass(player.getOffhandItem())) {
             return true;
         }
 
-        // Inventory (includes hotbar)
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
             if (isVanillaCompass(stack)) {
@@ -364,7 +355,7 @@ public class MapAtlasesHUD extends AbstractAtlasWidget implements HudElement {
     }
 
     private void drawCardinals(GuiGraphicsExtractor graphics, int x, int y, float yRot) {
-        if (mc.player == null || !hasCompass(mc.player) || mc.level.dimension() == Level.NETHER) {
+        if (mc.player == null || !hasCompass(mc.player) || mc.level.dimension() == Level.NETHER || mc.level.dimension() == Level.END) {
             return;
         }
         Matrix3x2fStack pose = graphics.pose();
@@ -400,45 +391,24 @@ public class MapAtlasesHUD extends AbstractAtlasWidget implements HudElement {
         pose.popMatrix();
     }
 
+    private void drawStringOutlined(GuiGraphicsExtractor graphics, Font font, String text, float x, float y, int innerColor, boolean shadow) {
+        PlatStuff.drawString(graphics, font, text, x + 1, y,     0xFF000000, false);
+        PlatStuff.drawString(graphics, font, text, x - 1, y,     0xFF000000, false);
+        PlatStuff.drawString(graphics, font, text, x,     y + 1, 0xFF000000, false);
+        PlatStuff.drawString(graphics, font, text, x,     y - 1, 0xFF000000, false);
+        PlatStuff.drawString(graphics, font, text, x + 1, y + 1, 0xFF000000, false);
+        PlatStuff.drawString(graphics, font, text, x - 1, y - 1, 0xFF000000, false);
+        PlatStuff.drawString(graphics, font, text, x + 1, y - 1, 0xFF000000, false);
+        PlatStuff.drawString(graphics, font, text, x - 1, y + 1, 0xFF000000, false);
+        PlatStuff.drawString(graphics, font, text, x, y, innerColor, shadow);
+    }
 
     private void drawNorthLetter(GuiGraphicsExtractor graphics, Font font, float a, float b, String letter) {
         Matrix3x2fStack pose = graphics.pose();
         pose.pushMatrix();
         float scale = (float) (double) MapAtlasesClientConfig.miniMapCardinalsScale.get() / globalScale;
         pose.scale(scale, scale);
-        PlatStuff.drawString(graphics, font, letter,
-            a / scale - font.width(letter) / 2f + 1,
-            b / scale - font.lineHeight / 2f + 1,
-            0xFF000000, false);
-        PlatStuff.drawString(graphics, font, letter,
-            a / scale - font.width(letter) / 2f - 1,
-            b / scale - font.lineHeight / 2f - 1,
-            0xFF000000, false);
-        PlatStuff.drawString(graphics, font, letter,
-            a / scale - font.width(letter) / 2f + 1,
-            b / scale - font.lineHeight / 2f - 1,
-            0xFF000000, false);
-        PlatStuff.drawString(graphics, font, letter,
-            a / scale - font.width(letter) / 2f - 1,
-            b / scale - font.lineHeight / 2f + 1,
-            0xFF000000, false);
-        PlatStuff.drawString(graphics, font, letter,
-            a / scale - font.width(letter) / 2f,
-            b / scale - font.lineHeight / 2f - 1,
-            0xFF000000, false);
-        PlatStuff.drawString(graphics, font, letter,
-            a / scale - font.width(letter) / 2f,
-            b / scale - font.lineHeight / 2f + 1,
-            0xFF000000, false);
-        PlatStuff.drawString(graphics, font, letter,
-            a / scale - font.width(letter) / 2f - 1,
-            b / scale - font.lineHeight / 2f,
-            0xFF000000, false);
-        PlatStuff.drawString(graphics, font, letter,
-            a / scale - font.width(letter) / 2f + 1,
-            b / scale - font.lineHeight / 2f,
-            0xFF000000, false);
-        PlatStuff.drawString(graphics, font, letter,
+        drawStringOutlined(graphics, font, letter,
             a / scale - font.width(letter) / 2f,
             b / scale - font.lineHeight / 2f,
             0xFFF21D25, false);
@@ -453,28 +423,83 @@ public class MapAtlasesHUD extends AbstractAtlasWidget implements HudElement {
     }
 
     public void drawMapComponentCoords(
-            GuiGraphicsExtractor context,
-            Font font,
-            int x, int y,
-            int targetWidth,
-            float textScaling,
-            BlockPos pos,
-            boolean chunk
-    ) {
-        String coordsToDisplay;
-        if (chunk) {
-            coordsToDisplay = Component.translatable("message.map_atlases.chunk_coordinates",
-                    pos.getX() / 16, pos.getZ() / 16, pos.getX() % 16, pos.getZ() % 16).getString();
-        } else {
-            coordsToDisplay = displaysY ?
-                    Component.translatable("message.map_atlases.coordinates_full",
-                            pos.getX(), pos.getY(), pos.getZ()).getString()
-                    : Component.translatable("message.map_atlases.coordinates",
-                    pos.getX(), pos.getZ()).getString();
-        }
-        drawScaledComponent(context, font, x, y, coordsToDisplay,
-                textScaling / globalScale, targetWidth, (int) (targetWidth / globalScale));
+        GuiGraphicsExtractor context,
+        Font font,
+        int screenWidth,
+        int minimapX,
+        float textScaling,
+        BlockPos pos,
+        boolean chunk
+) {
+    String coordsToDisplay;
+    String prefix = "";
+
+    if (chunk) {
+        coordsToDisplay = Component.translatable("message.map_atlases.chunk_coordinates",
+                Component.literal(String.valueOf(pos.getX() / 16)),
+                Component.literal(String.valueOf(pos.getZ() / 16)),
+                Component.literal(String.valueOf(pos.getX() % 16)),
+                Component.literal(String.valueOf(pos.getZ() % 16))).getString();
+    } else {
+        float degrees = Mth.wrapDegrees(mc.player.getYRot());
+        if (degrees < 0) degrees += 360;
+        int facing = Math.round(degrees / 45);
+        String dir = DIRECTIONS.get(facing);
+        boolean compassValid = mc.level.dimension() != Level.NETHER
+                && mc.level.dimension() != Level.END;
+        prefix = compassValid ? dir + ": " : "";
+        coordsToDisplay = Component.translatable("message.map_atlases.coordinates_full",
+                Component.literal(String.valueOf(pos.getX())),
+                Component.literal(String.valueOf(pos.getY())),
+                Component.literal(String.valueOf(pos.getZ()))).getString();
     }
+
+    int xcoord;
+    String fullText = prefix + coordsToDisplay;
+    int stringWidth = font.width(fullText);
+    if (MapAtlasesClientConfig.compassPositionIsLeft.get()) {
+        xcoord = 5;
+    } else if (MapAtlasesClientConfig.compassPositionIsCenter.get()) {
+        xcoord = (screenWidth / 2) - (stringWidth / 2);
+    } else {
+        xcoord = screenWidth - stringWidth - 5;
+    }
+
+    
+    if (mc.level.dimension() == Level.NETHER || mc.level.dimension() == Level.END) {
+        float minimapCenterX = minimapX + BG_SIZE / 2f;
+        float scaledHalfWidth = stringWidth / 2f;
+        float leftEdge = minimapCenterX - scaledHalfWidth;
+        float shiftX = leftEdge < 2 ? 2 - leftEdge : 0;
+        xcoord = (int) (minimapCenterX - scaledHalfWidth + shiftX);
+    }
+
+    int ycoord = MapAtlasesClientConfig.compassHeightOffset.get() + 3;
+
+    Matrix3x2fStack pose = context.pose();
+    pose.pushMatrix();
+
+    if (!prefix.isEmpty()) {
+        float cursorX = xcoord;
+        for (int i = 0; i < prefix.length(); i++) {
+            String ch = String.valueOf(prefix.charAt(i));
+            if (ch.equals("N")) {
+                drawStringOutlined(context, font, ch, cursorX, ycoord, 0xFFF21D25, false);
+            } else {
+                PlatStuff.drawString(context, font, ch, cursorX, ycoord, 0xFFE0E0E0,
+                        MapAtlasesClientConfig.drawTextShadow.get());
+            }
+            cursorX += font.width(ch);
+        }
+        PlatStuff.drawString(context, font, coordsToDisplay,
+                cursorX, ycoord, 0xFFE0E0E0, MapAtlasesClientConfig.drawTextShadow.get());
+    } else {
+        PlatStuff.drawString(context, font, coordsToDisplay,
+                xcoord, ycoord, 0xFFE0E0E0, MapAtlasesClientConfig.drawTextShadow.get());
+    }
+
+    pose.popMatrix();
+}
 
     public void drawMapComponentBiome(
             GuiGraphicsExtractor context,
@@ -494,7 +519,7 @@ public class MapAtlasesHUD extends AbstractAtlasWidget implements HudElement {
             biomeToDisplay = Component.translatable("biome." + id.getNamespace() + "." +
                     id.getPath().replace('/', '.')).getString();
         }
-        drawScaledComponent(context, font, x, y, biomeToDisplay,
+        drawCenteredTextSafe(context, font, x, y, biomeToDisplay,
                 textScaling / globalScale, maxWidth, (int) (targetWidth / globalScale));
     }
 
@@ -515,6 +540,33 @@ public class MapAtlasesHUD extends AbstractAtlasWidget implements HudElement {
 
         pose.pushMatrix();
         pose.translate(centerX, y + 4);
+        pose.scale(scale, scale);
+        pose.translate(-(textWidth) / 2f, -4);
+        drawStringWithLighterShadow(context, font, text, 0, 0);
+        pose.popMatrix();
+    }
+
+    private void drawCenteredTextSafe(
+            GuiGraphicsExtractor context,
+            Font font,
+            int x, int y,
+            String text,
+            float textScaling,
+            int maxWidth,
+            int targetWidth
+    ) {
+        Matrix3x2fStack pose = context.pose();
+        float textWidth = font.width(text);
+        float scale = Math.min(1, maxWidth * textScaling / Math.max(textWidth, 1));
+        scale *= textScaling;
+        float centerX = x + targetWidth / 2f;
+
+        float scaledHalfWidth = (textWidth * scale) / 2f;
+        float leftEdge = centerX - scaledHalfWidth;
+        float shiftX = leftEdge < 2 ? 2 - leftEdge : 0;
+
+        pose.pushMatrix();
+        pose.translate(centerX + shiftX, y + 4);
         pose.scale(scale, scale);
         pose.translate(-(textWidth) / 2f, -4);
         drawStringWithLighterShadow(context, font, text, 0, 0);

@@ -205,7 +205,7 @@ public abstract class AbstractAtlasWidget {
         List<Map.Entry<String, MapDecoration>> blockMarkers = new ArrayList<>();
         for (var e : decorations.entrySet()) {
             if (MoonlightCompat.isBlockMarkerDecoration(e.getKey(), e.getValue())) {
-                blockMarkers.add(new AbstractMap.SimpleEntry<>(e.getKey(), e.getValue())); // snapshot
+                blockMarkers.add(new AbstractMap.SimpleEntry<>(e.getKey(), e.getValue()));
             }
         }
 
@@ -281,7 +281,7 @@ public abstract class AbstractAtlasWidget {
             final org.joml.Matrix3x2f savedMatrix = pose.get(new org.joml.Matrix3x2f());
             final boolean rotates = rotatesWithPlayer;
             final float playerYRot = player.getYRot();
-            final int mapId = state.id;  // add this
+            final int mapId = state.id;
             pendingDecorations.add(() -> {
                 pose.pushMatrix();
                 pose.set(savedMatrix);

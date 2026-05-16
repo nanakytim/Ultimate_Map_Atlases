@@ -534,15 +534,15 @@ public class AtlasOverviewScreen extends Screen {
 
     private static final LinkedHashSet<String> priorityIds = new LinkedHashSet<>();
 
-    public void togglePriority(String decorationId) {
-        if (!priorityIds.remove(decorationId)) {
-            priorityIds.add(decorationId);
+    public void togglePriority(String priorityKey) {
+        if (!priorityIds.remove(priorityKey)) {
+            priorityIds.add(priorityKey);
         }
         recalculateDecorationWidgets();
     }
 
-    public boolean isPriority(String decorationId) {
-        return priorityIds.contains(decorationId);
+    public boolean isPriority(String priorityKey) {
+        return priorityIds.contains(priorityKey);
     }
 
     protected void recalculateDecorationWidgets() {
@@ -582,12 +582,12 @@ public class AtlasOverviewScreen extends Screen {
 
         for (String pid : priorityIds) {
             allWidgets.stream()
-                    .filter(w -> w.getDecorationId().equals(pid))
+                    .filter(w -> w.getPriorityKey().equals(pid))
                     .findFirst()
                     .ifPresent(priorityWidgets::add);
         }
         for (var w : allWidgets) {
-            if (!priorityIds.contains(w.getDecorationId())) {
+            if (!priorityIds.contains(w.getPriorityKey())) {
                 normalWidgets.add(w);
             }
         }
@@ -641,13 +641,13 @@ public class AtlasOverviewScreen extends Screen {
             for (String pid : priorityIds) {
                 byDistance.stream()
                         .map(Pair::getSecond)
-                        .filter(w -> w.getDecorationId().equals(pid))
+                        .filter(w -> w.getPriorityKey().equals(pid))
                         .findFirst()
                         .ifPresent(priorityOrdered::add);
             }
             for (var e : byDistance) {
                 var w = e.getSecond();
-                if (!priorityIds.contains(w.getDecorationId())) {
+                if (!priorityIds.contains(w.getPriorityKey())) {
                     normalOrdered.add(w);
                 }
             }

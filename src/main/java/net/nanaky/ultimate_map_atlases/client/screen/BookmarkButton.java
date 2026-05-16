@@ -40,7 +40,7 @@ public abstract class BookmarkButton extends AbstractWidget {
                 this.getX(), this.getY(), xOff,
                 yOff + (this.selected ? this.height : 0),
                 this.width, this.height, 256, 256);
-        if (parentScreen.isEditingText()) isHovered = false; //cancel tooltip
+        if (parentScreen.isEditingText()) isHovered = false;
     }
 
     @Override

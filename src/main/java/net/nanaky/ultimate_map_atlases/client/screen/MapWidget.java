@@ -51,8 +51,7 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
     private float targetZoomLevel;
 
     private boolean isHovered;
-    private float animationProgress = 0; //from zero to 1
-
+    private float animationProgress = 0;
     private float scaleAlpha = 0;
 
     public MapWidget(int x, int y, int width, int height, int atlasesCount,
@@ -155,7 +154,7 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
             }
             if (!MapAtlasesClientConfig.drawWorldMapCoords.get()) return;
             if (d != null) {
-                String label = Component.translatable("message.map_atlases.map_name", d.id).getString();
+                String label = Component.translatable("message.map_atlases.map_name", Component.literal(String.valueOf(d.id))).getString();
                 int textWidth = mc.font.width(label);
                 MapAtlasesHUD.drawScaledComponent(
                         graphics, mc.font, x - 63 + textWidth / 2, y + 1, label, 1, width, width);

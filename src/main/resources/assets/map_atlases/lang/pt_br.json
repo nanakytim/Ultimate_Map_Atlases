@@ -32,7 +32,7 @@
   "message.map_atlases.shear": "Remover mapa",
   "message.map_atlases.shear.info": "Clique em um mapa para removê-lo",
   "message.map_atlases.marker_name": "Nome do marcador",
-  "message.map_atlases.map_name": "Mapa: ",
+  "message.map_atlases.map_name": "Mapa: %s",
   "message.map_atlases.map_scale": "1:%dx",
   "message.map_atlases.map_index": "%s",
   "message.map_atlases.slice_height": "Y: %s",

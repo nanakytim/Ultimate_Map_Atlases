@@ -45,11 +45,11 @@ public class MapAtlasesClientConfig {
 
         miniMapHorizontalOffset = builder
                 .comment("An integer which will offset the mini-map horizontally")
-                .define("horizontal_offset", 0, -4000, 4000);
+                .define("horizontal_offset", 6, -4000, 4000);
 
         miniMapVerticalOffset = builder
                 .comment("An integer which will offset the mini-map vertically")
-                .define("vertical_offset", 0, -4000, 4000);
+                .define("vertical_offset", 16, -4000, 4000);
 
         activePotionVerticalOffset = builder
                 .comment("The number of pixels to shift vertically when there's an active effect")
@@ -177,6 +177,22 @@ public class MapAtlasesClientConfig {
         convertXaero = builder.comment("Turn on to convert Xaeros minimap waypoints. Conversion will happen on world boot. Remember to turn back off")
                 .define("convert_xaeros_waypoints", false);
 
+        compassPositionIsLeft = builder
+        .comment("Places the coordinate text on the left")
+        .define("compass_position_left", true);
+        compassPositionIsCenter = builder
+                .comment("Places the coordinate text in the center")
+                .define("compass_position_center", false);
+        compassPositionIsRight = builder
+                .comment("Places the coordinate text on the right")
+                .define("compass_position_right", false);
+        compassHeightOffset = builder
+                .comment("The vertical offset (y coord) for the coordinate text. Determines how far down the text should be on the screen.")
+                .define("compass_height_offset", 5, 0, 3000);
+        drawTextShadow = builder
+                .comment("If the coordinate text should have a shadow drawn below it")
+                .define("compass_draw_text_shadow", true);
+
         builder.pop();
 
         SPEC = builder.buildAndRegister();
@@ -233,6 +249,12 @@ public class MapAtlasesClientConfig {
     public static final Supplier<Boolean> convertXaero;
     public static final Supplier<Boolean> showsMapBackground;
     public static final Supplier<Boolean> hideWhenInventoryOpen;
+
+    public static final Supplier<Boolean> compassPositionIsLeft;
+    public static final Supplier<Boolean> compassPositionIsCenter;
+    public static final Supplier<Boolean> compassPositionIsRight;
+    public static final Supplier<Integer> compassHeightOffset;
+    public static final Supplier<Boolean> drawTextShadow;
 
     public static final ConfigSpec SPEC;
 

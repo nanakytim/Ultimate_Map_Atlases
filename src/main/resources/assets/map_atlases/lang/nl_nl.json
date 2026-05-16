@@ -32,7 +32,7 @@
   "message.map_atlases.shear": "Kaart verwijderen",
   "message.map_atlases.shear.info": "Klik op een kaart om deze te verwijderen",
   "message.map_atlases.marker_name": "Markeringsnaam",
-  "message.map_atlases.map_name": "Kaart: ",
+  "message.map_atlases.map_name": "Kaart: %s",
   "message.map_atlases.map_scale": "1:%dx",
   "message.map_atlases.map_index": "%s",
   "message.map_atlases.slice_height": "Y: %s",

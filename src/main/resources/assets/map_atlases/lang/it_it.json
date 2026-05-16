@@ -32,7 +32,7 @@
   "message.map_atlases.shear": "Rimuovi mappa",
   "message.map_atlases.shear.info": "Clicca su una mappa per rimuoverla",
   "message.map_atlases.marker_name": "Nome segnalino",
-  "message.map_atlases.map_name": "Mappa: ",
+  "message.map_atlases.map_name": "Mappa: %s",
   "message.map_atlases.map_scale": "1:%dx",
   "message.map_atlases.map_index": "%s",
   "message.map_atlases.slice_height": "Y: %s",

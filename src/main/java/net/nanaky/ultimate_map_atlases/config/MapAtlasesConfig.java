@@ -33,7 +33,7 @@ public class MapAtlasesConfig {
 
         pityActivationMapCount = builder
                 .comment("Controls how many free Empty Maps you get for 'activating' an Inactive Atlas")
-                .define("pity_activation_map_count", 9, 0, 64);
+                .define("pity_activation_map_count", 0, 0, 64);
 
 
         enableEmptyMapEntryAndFill = builder
