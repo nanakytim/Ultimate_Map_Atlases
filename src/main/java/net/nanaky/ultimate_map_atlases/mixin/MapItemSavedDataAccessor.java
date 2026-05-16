@@ -46,7 +46,7 @@ public interface MapItemSavedDataAccessor {
     void invokeSetDecorationsDirty();
 
     @Invoker("setColorsDirty")
-void invokeSetColorsDirty(int x, int z);
+    void invokeSetColorsDirty(int x, int z);
 
     @Invoker("removeDecoration")
     void invokeRemoveDecoration(String pIdentifier);

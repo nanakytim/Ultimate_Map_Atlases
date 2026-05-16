@@ -1,9 +1,3 @@
-/**
- * This class was forked from:
- * https://github.com/AntiqueAtlasTeam/AntiqueAtlas/blob/37038a399ecac1d58bcc7164ef3d309e8636a2cb/src/main/java
- * /hunternif/mc/impl/atlas/mixin/prod/MixinCartographyTableHandlerSlot.java
- * Under the GPL-3 license.
- */
 package net.nanaky.ultimate_map_atlases.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
@@ -73,7 +67,6 @@ class MixinCartographyTableAbstractContainerMenuSecondSlotMaps {
                     (slotOneItem.is(Items.MAP)
                             || (MapAtlasesConfig.acceptPaperForEmptyMaps.get() && slotOneItem.is(Items.PAPER)))) {
                 int amountToTake = MapAtlasesAccessUtils.getMapCountToAdd(atlas, slotOneItem, player.level());
-                // onTakeItem already calls takeStack(1) so we subtract that out
                 slotOne.remove(amountToTake - 1);
             } else if (MapAtlasesAccessUtils.isValidFilledMap(slotOneItem)) {
                 slotOne.remove(1);

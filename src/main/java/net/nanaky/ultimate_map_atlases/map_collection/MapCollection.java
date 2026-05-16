@@ -17,18 +17,15 @@ import net.nanaky.ultimate_map_atlases.utils.Slice;
 import java.util.*;
 import java.util.function.Predicate;
 
-// The purpose of this object is to save a datastructures with all available maps so we dont have to keep deserializing nbt
 public class MapCollection implements IMapCollection {
 
     public static final String MAP_LIST_NBT = "maps";
 
     private final Map<MapKey, MapDataHolder> maps = new HashMap<>();
     private final Set<Integer> ids = new HashSet<>();
-    //available dimensions and slices
     private final Map<ResourceKey<Level>, Map<MapType, TreeSet<Integer>>> dimensionSlices = new HashMap<>();
     private byte scale = 0;
     private CompoundTag lazyNbt = null;
-    // list of ids that have not been received yet
     private final Set<Integer> notSyncedIds = new HashSet<>();
 
 
@@ -40,7 +37,6 @@ public class MapCollection implements IMapCollection {
         Preconditions.checkState(this.lazyNbt == null, "map collection capability was not initialized");
     }
 
-    // if a duplicate exists its likely that its data was not synced yet
     @Override
     public void addNotSynced(Level level) {
         if (notSyncedIds.isEmpty()) {
@@ -54,7 +50,6 @@ public class MapCollection implements IMapCollection {
         }
     }
 
-    // we need level context
     public void initialize(Level level) {
         if (lazyNbt != null) {
             int[] array = lazyNbt.getIntArray(MAP_LIST_NBT).orElseGet(() -> new int[0]);
@@ -65,7 +60,6 @@ public class MapCollection implements IMapCollection {
         }
     }
 
-    //@Override
     public CompoundTag serializeNBT() {
         if (!isInitialized()) return lazyNbt;
         CompoundTag c = new CompoundTag();
@@ -84,7 +78,6 @@ public class MapCollection implements IMapCollection {
         return ids.contains(id);
     }
 
-    //@Override
     public void deserializeNBT(CompoundTag c) {
         lazyNbt = c.copy();
     }
@@ -109,8 +102,6 @@ public class MapCollection implements IMapCollection {
             if (ids.contains(intId)) {
                 return false;
             }
-            // Keep unresolved ids around on both sides so atlas history is not discarded during reloads.
-            // The actual map data can become available later and be promoted via addNotSynced.
             if (level instanceof ServerLevel) {
                 MapAtlasesMod.LOGGER.warn("Map with id {} not yet available in level {}; keeping it pending", intId, level.dimension().identifier());
             }
@@ -131,7 +122,6 @@ public class MapCollection implements IMapCollection {
             boolean knownId = ids.contains(intId);
             boolean pendingId = notSyncedIds.contains(intId);
 
-            //from now on we assume that all client maps cant have their center and data unfilled
             if (existing != null) {
                 if (existing.id == intId || ids.contains(intId)) {
                     notSyncedIds.remove(intId);

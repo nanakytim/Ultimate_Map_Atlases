@@ -14,22 +14,42 @@ import net.minecraft.world.level.saveddata.maps.MapId;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.minecraft.core.component.DataComponents;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
+import net.nanaky.ultimate_map_atlases.PlatStuff;
 import net.nanaky.ultimate_map_atlases.client.screen.CartographyTableAtlasButton;
 
 @Mixin(CartographyTableScreen.class)
 public abstract class CartographyTableScreenMixin extends AbstractContainerScreen<CartographyTableMenu> {
+
+    @Unique private CartographyTableAtlasButton mapatlases$leftButton;
+    @Unique private CartographyTableAtlasButton mapatlases$rightButton;
+
     protected CartographyTableScreenMixin(CartographyTableMenu pMenu, Inventory pPlayerInventory, Component pTitle) {
         super(pMenu, pPlayerInventory, pTitle);
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))
     public void init(CartographyTableMenu menu, Inventory playerInventory, Component title, CallbackInfo ci) {
-        this.addRenderableWidget(new CartographyTableAtlasButton(this.leftPos, this.topPos, true, this.menu));
-        this.addRenderableWidget(new CartographyTableAtlasButton(this.leftPos, this.topPos, false, this.menu));
+        mapatlases$leftButton = new CartographyTableAtlasButton(this.leftPos, this.topPos, true, this.menu);
+        mapatlases$rightButton = new CartographyTableAtlasButton(this.leftPos, this.topPos, false, this.menu);
+    }
+
+    @Inject(method = "extractBackground", at = @At("HEAD"))
+    public void mapatlases$updateButtonVisibility(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a, CallbackInfo ci) {
+        boolean active = PlatStuff.isShear(this.menu.getSlot(CartographyTableMenu.ADDITIONAL_SLOT).getItem())
+                && this.menu.getSlot(CartographyTableMenu.MAP_SLOT).getItem().is(MapAtlasesMod.MAP_ATLAS.get());
+        boolean present = this.children().contains(mapatlases$leftButton);
+        if (active && !present) {
+            this.addRenderableWidget(mapatlases$leftButton);
+            this.addRenderableWidget(mapatlases$rightButton);
+        } else if (!active && present) {
+            this.removeWidget(mapatlases$leftButton);
+            this.removeWidget(mapatlases$rightButton);
+        }
     }
 
     @Inject(method = "extractResultingMap", at = @At(value = "HEAD"))

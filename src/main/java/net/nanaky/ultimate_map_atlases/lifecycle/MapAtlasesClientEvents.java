@@ -116,7 +116,6 @@ public class MapAtlasesClientEvents {
         if (!newSlice.equals(oldSlice)) {
             MapAtlasesNetworking.CHANNEL.sendToServer(new C2SSelectSlicePacket(newSlice, null));
         }
-        //update the client immediately
         MapAtlasItem.setSelectedSlice(atlas, newSlice);
     }
 
@@ -125,7 +124,6 @@ public class MapAtlasesClientEvents {
         ClientMarkers.unloadWorld();
     }
 
-    //make this client sided
     private static void maybeChangeSlice(Player player, Level level, IMapCollection maps, Slice lastSlice, ItemStack atlas) {
         MapType type = lastSlice.type();
         ResourceKey<Level> dim = lastSlice.dimension();
@@ -136,10 +134,8 @@ public class MapAtlasesClientEvents {
     }
 
 
-    // null when we dont change
     @Nullable
     public static Integer getClosestSlice(Player player, Level level, IMapCollection cap, ResourceKey<Level> dim, MapType type) {
-        //check locked
         TreeSet<Integer> heightTree = cap.getHeightTree(dim, type);
         if (heightTree.size() == 1) return null;
         int y = player.getBlockY();
@@ -150,7 +146,6 @@ public class MapAtlasesClientEvents {
         if (isAboveHeightMap) {
             return ceiling;
         }
-        //if not aove check one below and above where we are
         else {
             Integer floor = heightTree.floor(y);
 
@@ -162,7 +157,6 @@ public class MapAtlasesClientEvents {
             BlockPos.MutableBlockPos pos = player.blockPosition().mutable();
             int startY = pos.getY();
             for (int j = 1; j <= max; j++) {
-                //nothing found. we dont change
                 if (!canGoUp && !canGoDown) {
                     return null;
                 }

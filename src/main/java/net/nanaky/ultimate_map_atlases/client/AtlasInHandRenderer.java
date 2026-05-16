@@ -22,6 +22,7 @@ import net.nanaky.ultimate_map_atlases.utils.MapDataHolder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class AtlasInHandRenderer {
@@ -43,7 +44,6 @@ public class AtlasInHandRenderer {
     public static void render(PoseStack pPoseStack, SubmitNodeCollector submitNodeCollector, int pCombinedLight,
                               ItemStack pStack, Minecraft mc) {
         if (mc.screen instanceof AtlasOverviewScreen) return;
-
 
         MapDataHolder state = MapAtlasesClient.getActiveMap();
         if (state != null) {
@@ -94,8 +94,20 @@ public class AtlasInHandRenderer {
         var mapRenderer = minecraft.getMapRenderer();
         mapRenderer.extractRenderState(new MapId(state.id), data, MAP_RENDER_STATE);
         removeBackingPinStates(MAP_RENDER_STATE, customPins);
+
+        List<MapDecoration> blockMarkerDecorations = new ArrayList<>();
+        Map<String, MapDecoration> decorations = MapAtlasesClient.getMutableDecorations(data);
+        for (var entry : decorations.entrySet()) {
+            if (entry.getKey().startsWith(MoonlightCompat.BLOCK_MARKER_PREFIX)) {
+                MapDecoration deco = entry.getValue();
+                MAP_RENDER_STATE.decorations.removeIf(rs -> rs.x == deco.x() && rs.y == deco.y());
+                blockMarkerDecorations.add(deco);
+            }
+        }
+
         mapRenderer.render(MAP_RENDER_STATE, poseStack, submitNodeCollector, false, combinedLight);
         renderCustomPins(poseStack, submitNodeCollector, combinedLight, customPins);
+        renderBlockMarkers(poseStack, submitNodeCollector, combinedLight, blockMarkerDecorations);
     }
 
     private static void removeBackingPinStates(MapRenderState renderState, List<DecorationHolder> customPins) {
@@ -124,6 +136,30 @@ public class AtlasInHandRenderer {
             float x = MAP_WIDTH / 2f + pin.decoration().x() / 2f;
             float y = MAP_HEIGHT / 2f + pin.decoration().y() / 2f;
             renderPin(poseStack, submitNodeCollector, combinedLight, pin, x, y);
+        }
+    }
+
+    private static void renderBlockMarkers(PoseStack poseStack, SubmitNodeCollector submitNodeCollector,
+                                           int combinedLight, List<MapDecoration> decorations) {
+        for (MapDecoration deco : decorations) {
+            float x = MAP_WIDTH / 2f + deco.x() / 2f;
+            float y = MAP_HEIGHT / 2f + deco.y() / 2f;
+            Identifier texture = MapAtlasesClient.getDecorationTexture(deco);
+            poseStack.pushPose();
+            poseStack.translate(x, y, -0.02F);
+            poseStack.scale(4.0F, 4.0F, 3.0F);
+            poseStack.translate(-0.125F, 0.125F, 0.0F);
+            submitNodeCollector.order(0).submitCustomGeometry(
+                    poseStack,
+                    RenderTypes.text(texture),
+                    (pose, vertexConsumer) -> {
+                        vertexConsumer.addVertex(pose, -1.0F,  1.0F, -0.001F).setColor(-1).setUv(0.0F, 1.0F).setLight(combinedLight);
+                        vertexConsumer.addVertex(pose,  1.0F,  1.0F, -0.001F).setColor(-1).setUv(1.0F, 1.0F).setLight(combinedLight);
+                        vertexConsumer.addVertex(pose,  1.0F, -1.0F, -0.001F).setColor(-1).setUv(1.0F, 0.0F).setLight(combinedLight);
+                        vertexConsumer.addVertex(pose, -1.0F, -1.0F, -0.001F).setColor(-1).setUv(0.0F, 0.0F).setLight(combinedLight);
+                    }
+            );
+            poseStack.popPose();
         }
     }
 

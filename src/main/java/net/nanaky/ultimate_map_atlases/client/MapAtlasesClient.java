@@ -289,14 +289,12 @@ public class MapAtlasesClient {
         int textWidth = font.width(text);
         int textHeight = font.lineHeight;
         
-        // Add padding
         int padding = 1;
         int bgX = (int)(x - padding);
         int bgY = (int)(y - padding);
         int bgWidth = textWidth + (padding * 2);
         int bgHeight = textHeight + (padding * 2);
         
-        // Render semi-transparent black background (ARGB: 80% opacity black)
         graphics.fill(bgX, bgY, bgX + bgWidth, bgY + bgHeight, 0xCC000000);
 }
 

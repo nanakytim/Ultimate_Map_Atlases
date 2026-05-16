@@ -1,9 +1,3 @@
-/**
- * This class was forked from:
- * https://github.com/AntiqueAtlasTeam/AntiqueAtlas/blob/37038a399ecac1d58bcc7164ef3d309e8636a2cb/src/main/java
- * /hunternif/mc/impl/atlas/mixin/MixinCartographyTableAbstractContainerMenu.java
- * Under the GPL-3 license.
- */
 package net.nanaky.ultimate_map_atlases.mixin;
 
 import net.minecraft.world.Container;
@@ -62,19 +56,16 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
     protected CartographyTableMenuMixin(@Nullable MenuType<?> arg, int i) {
         super(arg, i);
     }
-    //TODO: TF maps cant go here
 
 
     @Inject(method = "setupResultSlot", at = @At("HEAD"), cancellable = true)
     void mapAtlas$UpdateResult(ItemStack topItem, ItemStack bottomItem, ItemStack oldResult, CallbackInfo info) {
-        // Never allow stacks in either slot
         if (topItem.getCount() > 1 || bottomItem.getCount() > 1) {
             this.resultContainer.setItem(CartographyTableMenu.RESULT_SLOT, ItemStack.EMPTY);
             info.cancel();
             return;
         }
         if (!topItem.is(MapAtlasesMod.MAP_ATLAS.get())) return;
-        // cut map
         if (PlatStuff.isShear(bottomItem)) {
             this.access.execute((world, blockPos) -> {
                 var maps = MapAtlasItem.getMaps(topItem, world);
@@ -90,7 +81,6 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
                 info.cancel();
             });
         }
-        // merge atlases
         else if (bottomItem.is(MapAtlasesMod.MAP_ATLAS.get())) {
             this.access.execute((world, blockPos) -> {
                 ItemStack result = topItem.copy();
@@ -110,7 +100,6 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
             });
 
         }
-        // add empty
         else if (bottomItem.getItem() == Items.MAP
                 || (MapAtlasesConfig.acceptPaperForEmptyMaps.get() && bottomItem.getItem() == Items.PAPER)) {
             this.access.execute((world, blockPos) -> {
@@ -122,7 +111,6 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
                 info.cancel();
             });
         }
-        // add a filled map
         else if (bottomItem.getItem() == Items.FILLED_MAP) {
             this.access.execute((world, blockPos) -> {
                 ItemStack result = topItem.copy();
@@ -139,7 +127,6 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
 
     @Inject(method = "quickMoveStack", at = @At("HEAD"), cancellable = true)
     void mapAtlas$TransferSlot(Player player, int index, CallbackInfoReturnable<ItemStack> info) {
-        // Prevent iterating result slot when extracting a map from atlas+shears
         if (index == 2) {
             Slot resultSlot = this.slots.get(2);
             if (resultSlot.hasItem()) {
@@ -157,7 +144,6 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
 
         ItemStack stack = slot.getItem();
 
-        // Shears: only go in bottom slot (slot 1), and only if top slot has an atlas
         if (PlatStuff.isShear(stack)) {
             if (this.slots.get(0).hasItem() && this.slots.get(0).getItem().is(MapAtlasesMod.MAP_ATLAS.get())) {
                 if (!this.moveItemStackTo(stack, 1, 2, false)) {
@@ -169,7 +155,6 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
             return;
         }
 
-        // Paper: bottom slot (slot 1) only if top slot has an atlas or filled map
         if (stack.getItem() == Items.PAPER) {
             if (this.slots.get(0).hasItem() && 
                 (this.slots.get(0).getItem().is(MapAtlasesMod.MAP_ATLAS.get()) || 
@@ -183,7 +168,6 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
             return;
         }
 
-        // Atlas: top slot first (slot 0), then bottom slot (slot 1) only if top slot has an atlas
         if (stack.getItem() == MapAtlasesMod.MAP_ATLAS.get()) {
             ItemStack single = stack.copyWithCount(1);
             if (!this.slots.get(0).hasItem()) {
@@ -199,7 +183,6 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
             return;
         }
 
-        // Filled map: top slot first (slot 0), then bottom slot (slot 1)
         if (stack.getItem() == Items.FILLED_MAP) {
             if (!this.slots.get(0).hasItem()) {
                 this.moveItemStackTo(stack, 0, 1, false);
@@ -212,7 +195,6 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
             return;
         }
 
-        // Everything else: vanilla behaviour, try top slot only
         if (!this.moveItemStackTo(stack, 0, 1, false)) {
             info.setReturnValue(ItemStack.EMPTY);
         }
@@ -270,7 +252,6 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
                             this.mapatlases$selectedSlice = null;
                         }
                     } catch (Exception e) {
-                        //aa ERROR
                         int a = 1;
                     }
                 }

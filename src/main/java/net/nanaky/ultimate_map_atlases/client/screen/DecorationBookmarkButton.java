@@ -6,12 +6,15 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.saveddata.maps.MapDecoration;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
+import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
 import net.nanaky.ultimate_map_atlases.client.CompoundTooltip;
 import net.nanaky.ultimate_map_atlases.client.MapAtlasesClient;
 import net.nanaky.ultimate_map_atlases.config.MapAtlasesClientConfig;
+import net.nanaky.ultimate_map_atlases.integration.moonlight.ClientMarkers;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.CustomDecorationButton;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.MoonlightCompat;
 import net.nanaky.ultimate_map_atlases.networking.C2SRemoveMarkerPacket;
@@ -71,16 +74,17 @@ public abstract class DecorationBookmarkButton extends BookmarkButton {
     @Override
     public void onClick(MouseButtonEvent event, boolean doubleClick) {
         this.setSelected(true);
-        if (shfting) {
+        if (control && canDeleteMarker()) {
             this.deleteMarker();
             parentScreen.recalculateDecorationWidgets();
+        } else if (shfting) {
+            parentScreen.togglePriority(decorationId);
         } else {
             parentScreen.centerOnDecoration(this);
         }
     }
 
     protected abstract void deleteMarker();
-
 
     public abstract double getWorldX();
 
@@ -101,24 +105,41 @@ public abstract class DecorationBookmarkButton extends BookmarkButton {
         this.index = index;
     }
 
+    public String getDecorationId() {
+        return decorationId;
+    }
+
     @Override
     protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         if (this.index != 0) {
             graphics.nextStratum();
         }
         super.extractWidgetRenderState(graphics, mouseX, mouseY, partialTick);
+
         if (!parentScreen.isPlacingPin() && !parentScreen.isEditingText()) {
-            if (this.control && canFocusMarker()) {
-                graphics.blit(RenderPipelines.GUI_TEXTURED, ATLAS_BACKGROUND_TEXTURE, getX(), getY(),
-                        24, 173, 5, 5, 256, 256);
-            } else if (this.shfting && canDeleteMarker()) {
+            if (parentScreen.isPriority(decorationId)) {
+                graphics.blit(RenderPipelines.GUI_TEXTURED, ATLAS_BACKGROUND_TEXTURE,
+                        getX(), getY(),
+                        27, 167 + 36 + (this.selected ? BUTTON_H : 0),
+                        BUTTON_W, BUTTON_H,
+                        256, 256);
+            }
+            if (this.control && canDeleteMarker()) {
                 graphics.blit(RenderPipelines.GUI_TEXTURED, ATLAS_BACKGROUND_TEXTURE, getX(), getY(),
                         24, 167, 5, 5, 256, 256);
             }
+            if (this.shfting) {
+                if (parentScreen.isPriority(decorationId)) {
+                    graphics.blit(RenderPipelines.GUI_TEXTURED, ATLAS_BACKGROUND_TEXTURE, getX() + 18, getY() - 4,
+                            74, 172, 7, 7, 256, 256);
+                } else {
+                    graphics.blit(RenderPipelines.GUI_TEXTURED, ATLAS_BACKGROUND_TEXTURE, getX() + 22, getY() - 6,
+                            74, 183, 7, 7, 256, 256);
+                }
+            }
         }
-        renderDecoration(graphics, mouseX, mouseY);
 
-        //hide waiting to be activated by mapWidget
+        renderDecoration(graphics, mouseX, mouseY);
         setSelected(false);
     }
 
@@ -126,16 +147,19 @@ public abstract class DecorationBookmarkButton extends BookmarkButton {
 
     @Override
     public Tooltip createTooltip() {
-        if (control && canFocusMarker()) {
-            return Tooltip.create(Component.translatable("tooltip.map_atlases.focus_marker"));
-        }
-        if (shfting && canDeleteMarker()) {
+        if (control && canDeleteMarker()) {
             return Tooltip.create(Component.translatable("tooltip.map_atlases.delete_marker"));
         }
+        if (shfting) {
+            if (parentScreen.isPriority(decorationId)) {
+                return Tooltip.create(Component.translatable("tooltip.map_atlases.remove_priority_marker"));
+            } else {
+                return Tooltip.create(Component.translatable("tooltip.map_atlases.set_priority_marker"));
+            }
+        }
         Component mapIconComponent = getDecorationName();
-        Tooltip t = Tooltip.create(mapIconComponent);
         if (!MapAtlasesClientConfig.drawPinMapCoords.get()) {
-            return t;
+            return Tooltip.create(mapIconComponent);
         }
         Component coordsComponent = Component.literal("X: " + (int) getWorldX() + ", Z: " + (int) getWorldZ())
                 .withStyle(ChatFormatting.GRAY);
@@ -153,20 +177,26 @@ public abstract class DecorationBookmarkButton extends BookmarkButton {
 
     public static class Vanilla extends DecorationBookmarkButton {
 
-        private final MapDecoration decoration; // might not match what on map
+        private final MapDecoration decoration;
         private final boolean isBanner;
+        private final boolean isBlockMarker;
 
         public Vanilla(int px, int py, AtlasOverviewScreen screen, MapDataHolder data, MapDecoration mapDecoration, String decoId) {
             super(px, py, screen, data, decoId);
             this.decoration = mapDecoration;
-            this.setTooltip(createTooltip());
+            /*
+             * IMPORTANT: do NOT detect banners by key (decoId). On the client, vanilla's
+             * addClientSideDecorations() rewrites all banner keys from "banner-X,Y,Z" to
+             * "icon-N", so decoId is always "icon-N" here and startsWith("banner-") is
+             * always false. Detect by decoration type instead: banner asset IDs all start
+             * with "banner_" (e.g. "banner_white", "banner_red", …).
+             */
             this.isBanner = decoration.type().isBound() &&
                     decoration.type().value().assetId().getPath().startsWith("banner_");
-        }
-
-        @Override
-        protected boolean canDeleteMarker() {
-            return isBanner;
+            // A block marker: key starts with "block_" (campfire / bed) — these keys are
+            // NOT rewritten by addClientSideDecorations(), so the prefix check is safe.
+            this.isBlockMarker = decoId.startsWith(MoonlightCompat.BLOCK_MARKER_PREFIX);
+            this.setTooltip(createTooltip());
         }
 
         @Override
@@ -179,41 +209,94 @@ public abstract class DecorationBookmarkButton extends BookmarkButton {
             return mapData.data.centerZ - getDecorationPos(decoration.y(), mapData.data);
         }
 
-
         @Override
         public Component getDecorationName() {
+            // For block markers: prefer decoration.name() (server-authoritative, same as banners)
+            // fall back to ClientMarkers (optimistic local store before server echo)
             var name = decoration.name();
-            return name.isEmpty()
-                    ? Component.literal(
-                    AtlasOverviewScreen.getReadableName(decoration.type().value().assetId().getPath().toLowerCase(Locale.ROOT)))
-                    : name.get();
+            if (!name.isEmpty()) return name.get();
+
+            if (isBlockMarker) {
+                Component stored = ClientMarkers.getBlockMarkerName(mapData.id, decorationId);
+                if (stored != null) return stored;
+                // derive readable name from asset path
+                String path = decoration.type().value().assetId().getPath().toLowerCase(Locale.ROOT);
+                if (path.startsWith("bed_")) {
+                    return Component.translatable("block.minecraft." + path.substring(4) + "_bed");
+                }
+                return Component.translatable("block.minecraft." + path);
+            }
+
+            if (isBanner) {
+                String path = decoration.type().value().assetId().getPath().toLowerCase(Locale.ROOT);
+                if (path.startsWith("banner_")) {
+                    return Component.translatable("block.minecraft." + path.substring(7) + "_banner");
+                }
+            }
+
+            String path = decoration.type().value().assetId().getPath().toLowerCase(Locale.ROOT);
+            return Component.literal(AtlasOverviewScreen.getReadableName(path));
         }
 
         @Override
         protected void renderDecoration(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
             graphics.nextStratum();
             graphics.blit(RenderPipelines.GUI_TEXTURED, MapAtlasesClient.getDecorationTexture(decoration),
-                    getX() + width / 2 - 4, getY() + height / 2 - 4,
+                    getX() + width / 2 - 2, getY() + height / 2 - 4,
                     0, 0, 8, 8, 8, 8);
         }
 
+        @Override
+        protected boolean canDeleteMarker() {
+            return !parentScreen.isPriority(decorationId);
+        }
+
+        @Override
+        public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+            if (control && !canDeleteMarker()) {
+                return false;
+            }
+            return super.mouseClicked(event, doubleClick);
+        }
 
         @Override
         protected void deleteMarker() {
             Map<String, MapDecoration> decorations = MapAtlasesClient.getMutableDecorations(mapData.data);
-            var d = decorations.get(decorationId);
-            if (d != null) {
-                //we cant use string id because server has them different...
-                MapAtlasesNetworking.CHANNEL.sendToServer(new C2SRemoveMarkerPacket(mapData.stringId,
-                        d.hashCode(), false));
 
-                //removes immediately from client so we update gui
+            if (isBlockMarker) {
+                /*
+                * Use the dedicated remove-only packet (markerType=2) instead of
+                * C2SToggleBlockMarkerPacket. The toggle packet would re-add the marker
+                * if the decoration happened to be absent server-side at the moment the
+                * packet arrived (race with map update broadcasts). Remove-only is safe.
+                */
+                MapAtlasesNetworking.CHANNEL.sendToServer(
+                        C2SRemoveMarkerPacket.forBlockMarker(mapData.stringId, decorationId));
+                ClientMarkers.removeBlockMarker(mapData.id, decorationId);
+                decorations.remove(decorationId);
+                MapAtlasesClient.markDecorationsDirty(mapData.data);
+
+            } else {
+                /*
+                * Treat everything else as a banner (the only other vanilla decoration
+                * that renderOnFrame() and ends up in the bookmark list).
+                *
+                * We cannot rely on isBanner: the client loses the original "banner-X,Y,Z"
+                * key (rewritten to "icon-N") AND the type binding may not be resolved at
+                * this point, making the assetId path check unreliable.
+                *
+                * Send world X,Z; the server scans bannerMarkers for the nearest entry
+                * within the per-scale rounding tolerance (see C2SRemoveMarkerPacket case 0).
+                *
+                * Optimistic client removal: remove the "icon-N" entry we DO have.
+                */
+                int worldX = (int) Math.round(getWorldX());
+                int worldZ = (int) Math.round(getWorldZ());
+                MapAtlasesNetworking.CHANNEL.sendToServer(
+                        C2SRemoveMarkerPacket.forBanner(mapData.stringId, worldX, worldZ));
                 decorations.remove(decorationId);
                 MapAtlasesClient.markDecorationsDirty(mapData.data);
             }
-
         }
     }
-
-
 }

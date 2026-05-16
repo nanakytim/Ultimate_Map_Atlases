@@ -92,11 +92,14 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
 
         this.isHovered = isMouseOver(pMouseX, pMouseY);
 
-        // Handle zooming markers hack
         float baseScale = MapAtlasesClientConfig.worldMapDecorationScale.get().floatValue();
         float baseTextScale = MapAtlasesClientConfig.worldMapDecorationTextScale.get().floatValue();
-        float decoScale = Math.max(0.3f, Math.min(2f, baseScale / (float) Math.pow(zoomLevel, 0.25f)));
-        float decoTextScale = Math.max(0.3f, Math.min(2f, baseTextScale / (float) Math.pow(zoomLevel, 0.25f)));
+        float widgetScale = (float) width / (atlasesCount * AbstractAtlasWidget.MAP_DIMENSION);
+        float zoomScale = (float) atlasesCount / zoomLevel;
+        float combinedTransform = widgetScale * zoomScale;
+
+        float decoScale = Mth.clamp((float) Math.pow((float) atlasesCount / zoomLevel, 0.6f) * baseScale, 0.25f, 2f) / combinedTransform;
+        float decoTextScale = Mth.clamp((float) Math.pow((float) atlasesCount / zoomLevel, 0.6f) * baseTextScale, 0.25f, 2f) / combinedTransform;
         MapAtlasesClient.setDecorationsScale(decoScale);
         MapAtlasesClient.setDecorationsTextScale(decoTextScale);
         
@@ -111,7 +114,7 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
                 0x00F000F0, hoveredData);
 
         float cursorScale = (float) Math.pow((float) atlasesCount / zoomLevel, 0.6f) * MapAtlasesClientConfig.worldMapDecorationScale.get().floatValue();
-        cursorScale = Mth.clamp(cursorScale, 0.25f, 2f);
+        cursorScale = Mth.clamp(cursorScale, 0.25f, 1.5f);
         drawPlayerCursor(graphics, player, cursorScale);
 
         MapAtlasesClient.setDecorationsScale(1);
@@ -142,21 +145,22 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
         }
 
         if (this.isHovered && !mapScreen.isEditingText()) {
-            this.renderPositionText(graphics, mc.font, pMouseX, pMouseY);
+            ColumnPos pos = getHoveredPos(pMouseX, pMouseY);
+            var d = mapScreen.findMapContaining(pos.x(), pos.z());
+            this.renderPositionText(graphics, mc.font, pMouseX, pMouseY, d);
 
             if (mapScreen.canTeleport()) {
                 graphics.setTooltipForNextFrame(mc.font.split(Component.translatable("chat.coordinates.tooltip")
                         .withStyle(ChatFormatting.GREEN), 200), pMouseX, pMouseY);
             }
-            if (PlatHelper.isDev()) {
-                ColumnPos pos = getHoveredPos(pMouseX, pMouseY);
-                var d = mapScreen.findMapContaining(pos.x(), pos.z());
-                if (d != null) {
-                    MapAtlasesHUD.drawScaledComponent(
-                            graphics, mc.font, x, y + height + 8 + 10, "Map: " + d.id, 1, width, width);
+            if (!MapAtlasesClientConfig.drawWorldMapCoords.get()) return;
+            if (d != null) {
+                String label = Component.translatable("message.map_atlases.map_name", d.id).getString();
+                int textWidth = mc.font.width(label);
+                MapAtlasesHUD.drawScaledComponent(
+                        graphics, mc.font, x - 63 + textWidth / 2, y + 1, label, 1, width, width);
                 }
             }
-        }
         renderScaleText(graphics, mc);
     }
 
@@ -174,7 +178,7 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
                 graphics.nextStratum();
                 graphics.text(mc.font,
                         Component.translatable("message.map_atlases.map_scale", String.format("%.1f", targetZoomLevel)),
-                        x, y + height - 8, (a << 24) | 0x00FFFFFF, false);
+                        x + 1, y + height - 8, (a << 24) | 0x00FFFFFF, false);
                 pose.popMatrix();
             }
         }
@@ -185,13 +189,14 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
         return mapScreen.findMapWithCenter(centerX, centerZ);
     }
 
-    private void renderPositionText(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
+    private void renderPositionText(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, MapDataHolder hoveredMap) {
         if (!MapAtlasesClientConfig.drawWorldMapCoords.get()) return;
+        if (hoveredMap == null) return;
         ColumnPos pos = getHoveredPos(mouseX, mouseY);
-        float textScaling = (float) (double) MapAtlasesClientConfig.worldMapCoordsScale.get();
         String coordsToDisplay = Component.translatable("message.map_atlases.coordinates", pos.x(), pos.z()).getString();
+        int textWidth = font.width(coordsToDisplay);
         MapAtlasesHUD.drawScaledComponent(
-                graphics, font, x, y + height + 8, coordsToDisplay, textScaling, width, width);
+                graphics, font, x + 62 - textWidth / 2, y + 1, coordsToDisplay, 1, width, width);
     }
 
 
@@ -208,7 +213,6 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
             double newZCenter;
             boolean discrete = !MapAtlasesClientConfig.worldMapSmoothPanning.get();
             if (discrete) {
-                //discrete mode
                 newXCenter = (int) (currentXCenter - (round((int) cumulativeMouseX, PAN_BUCKET) / PAN_BUCKET * mapBlocksSize));
                 newZCenter = (int) (currentZCenter - (round((int) cumulativeMouseY, PAN_BUCKET) / PAN_BUCKET * mapBlocksSize));
             } else {
@@ -321,7 +325,7 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
 
     }
 
-    public void resetAndCenter(int centerX, int centerZ, boolean followPlayer, boolean animation) {
+    public void resetAndCenter(int centerX, int centerZ, boolean followPlayer, boolean animation, boolean resetZoom) {
         if (followPlayer) {
             centerX = Minecraft.getInstance().player.getBlockX();
             centerZ = Minecraft.getInstance().player.getBlockZ();
@@ -332,12 +336,11 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
             this.currentXCenter = centerX;
             this.currentZCenter = centerZ;
         }
-        // Reset offset & zoom
         this.cumulativeMouseX = 0;
         this.cumulativeMouseY = 0;
         this.cumulativeZoomValue = 0;
         this.followingPlayer = followPlayer;
-        resetZoom();
+        if (resetZoom) resetZoom();
     }
 
     public void resetZoom() {
@@ -360,8 +363,6 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
             currentZCenter = interpolate(targetZCenter, currentZCenter, animationSpeed);
         }
 
-        //TODO:: better player snap
-        //follow player
         if (followingPlayer) {
 
             var player = Minecraft.getInstance().player;
@@ -378,11 +379,9 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
         float zoomScale = atlasesCount / zoomLevel;
         float finalScale = widgetScale * zoomScale;
 
-        // Convert world position to screen position
         float screenX = x + width / 2f + (float) ((player.getX() - currentXCenter) / (mapBlocksSize / AbstractAtlasWidget.MAP_DIMENSION)) * finalScale;
         float screenZ = y + height / 2f + (float) ((player.getZ() - currentZCenter) / (mapBlocksSize / AbstractAtlasWidget.MAP_DIMENSION)) * finalScale;
 
-        // Clip to widget bounds
         if (screenX < x || screenX > x + width || screenZ < y || screenZ > y + height) return;
 
         float rot = (float) Math.toRadians(player.getYRot() + 180f);

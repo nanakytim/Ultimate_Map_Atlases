@@ -40,13 +40,11 @@ public class MapAtlasCreateRecipe extends CustomRecipe {
 
     public static final RecipeSerializer<MapAtlasCreateRecipe> SERIALIZER = new RecipeSerializer<>(MAP_CODEC, STREAM_CODEC);
 
-    // some logic copied from shapeless recipes
     private final CraftingBookCategory category;
     private final NonNullList<Ingredient> ingredients;
     private final boolean isSimple;
     private final PlacementInfo placementInfo;
 
-    // to prevent the world from not being unloaded
     private WeakReference<Level> levelReference = new WeakReference<>(null);
 
     public MapAtlasCreateRecipe(CraftingBookCategory category, NonNullList<Ingredient> ingredients) {
@@ -72,14 +70,12 @@ public class MapAtlasCreateRecipe extends CustomRecipe {
         boolean hasMap = false;
         for (int j = 0; j < inv.size(); ++j) {
             ItemStack itemstack = inv.getItem(j);
-            // Check for filled map
             if (MapAtlasesAccessUtils.isValidFilledMap(itemstack)) {
                 if (hasMap || MapItem.getSavedData(itemstack, level) == null) {
                     return false;
                 }
                 hasMap = true;
             } 
-            // Check for empty map
             else if (MapAtlasesAccessUtils.isValidEmptyMap(itemstack)) {
                 if (hasMap) {
                     return false;
@@ -124,7 +120,6 @@ public class MapAtlasCreateRecipe extends CustomRecipe {
         ItemStack atlas = new ItemStack(MapAtlasesMod.MAP_ATLAS.get());
         
         if (isFilledMap) {
-            // Handle filled map (existing logic)
             Integer mapId = MapAtlasesAccessUtils.getMapId(mapItemStack);
             if (mapId == null) {
                 MapAtlasesMod.LOGGER.error("MapAtlasCreateRecipe found null Map ID from Filled Map");
@@ -141,7 +136,6 @@ public class MapAtlasCreateRecipe extends CustomRecipe {
             }
             MapAtlasItem.increaseEmptyMaps(atlas, 0);
         } else {
-            // Handle empty map (new logic)
             MapAtlasItem.increaseEmptyMaps(atlas, 1);
         }
         

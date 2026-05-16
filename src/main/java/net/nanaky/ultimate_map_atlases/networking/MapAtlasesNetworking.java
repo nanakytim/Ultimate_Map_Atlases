@@ -11,7 +11,6 @@ public class MapAtlasesNetworking {
             .register(NetworkDir.PLAY_TO_CLIENT, S2CMapPacketWrapper.class, S2CMapPacketWrapper::new)
             .register(NetworkDir.PLAY_TO_CLIENT, S2CWorldHashPacket.class, S2CWorldHashPacket::new)
             .register(NetworkDir.PLAY_TO_CLIENT, S2CDebugUpdateMapPacket.class, S2CDebugUpdateMapPacket::new)
-            // both dir
             .register(NetworkDir.BOTH, C2S2COpenAtlasScreenPacket.class, C2S2COpenAtlasScreenPacket::new)
 
             .register(NetworkDir.PLAY_TO_SERVER, C2SSelectSlicePacket.class, C2SSelectSlicePacket::new)
@@ -20,6 +19,7 @@ public class MapAtlasesNetworking {
             .register(NetworkDir.PLAY_TO_SERVER, C2SRemoveMarkerPacket.class, C2SRemoveMarkerPacket::new)
             .register(NetworkDir.PLAY_TO_SERVER, C2STakeAtlasPacket.class, C2STakeAtlasPacket::new)
             .register(NetworkDir.PLAY_TO_SERVER, C2SRemoveMapPacket.class, C2SRemoveMapPacket::new)
+            .register(NetworkDir.PLAY_TO_SERVER, C2SToggleBlockMarkerPacket.class, C2SToggleBlockMarkerPacket::new)
 
 
             .build();

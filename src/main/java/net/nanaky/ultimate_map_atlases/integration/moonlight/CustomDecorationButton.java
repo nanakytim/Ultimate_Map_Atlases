@@ -27,7 +27,7 @@ public class CustomDecorationButton extends DecorationBookmarkButton {
 
     @Override
     protected void deleteMarker() {
-        MapAtlasesNetworking.CHANNEL.sendToServer(new C2SRemoveMarkerPacket(mapData.stringId, decoration.decoration().hashCode(), true));
+        MapAtlasesNetworking.CHANNEL.sendToServer(new C2SRemoveMarkerPacket(mapData.stringId, decoration.decoration().hashCode(), true, decorationId));
         var decorations = net.nanaky.ultimate_map_atlases.client.MapAtlasesClient.getMutableDecorations(mapData.data);
         decorations.remove(decorationId);
         ClientMarkers.removeClientDeco(mapData.id, decorationId);

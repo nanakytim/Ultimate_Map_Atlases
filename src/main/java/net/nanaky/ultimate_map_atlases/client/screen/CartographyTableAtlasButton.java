@@ -26,7 +26,7 @@ public class CartographyTableAtlasButton extends AbstractWidget {
     protected final AbstractContainerMenu menu;
 
     public CartographyTableAtlasButton(int leftPos, int topPos, boolean left, AbstractContainerMenu menu) {
-    super(leftPos + (left ? 259 : 290), topPos + 65, 7, 11, Component.empty());
+    super(leftPos + (left ? 259 : 290), topPos + 70, 7, 11, Component.empty());
     this.menu = menu;
     this.left = left;
     }

@@ -29,20 +29,16 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class MapAtlasesServerEvents {
 
-    // Used to prevent Map creation spam consuming all Empty Maps on auto-create
     private static final ReentrantLock mutex = new ReentrantLock();
 
     private static final WeakHashMap<Player, Tuple<Float, HashMap<String, MapUpdateTicket>>> updateQueue = new WeakHashMap<>();
     private static final WeakHashMap<Player, MapDataHolder> lastMapData = new WeakHashMap<>();
 
-    //TODO: improve . lower updates when stationary
     private static class MapUpdateTicket {
         private static final Comparator<MapUpdateTicket> COMPARATOR = Comparator.comparingDouble(MapUpdateTicket::getPriority);
 
         private final MapDataHolder holder;
         private int waitTime = 20; //set to zero when this is updated.
-        // if not incremented, each tick.
-        // we start with lowest for newly added entries
         private double lastDistance = 1000000;
         private double currentPriority; //bigger the better
         private boolean hasBlankPixels = true;
@@ -65,12 +61,10 @@ public class MapAtlasesServerEvents {
         public void updatePriority(int px, int pz) {
             this.waitTime++;
             double distSquared = Mth.lengthSquared(px - holder.data.centerX, pz - holder.data.centerZ);
-            // Define weights for distance and waitTime
             double movingDistanceWeight = 1; // Adjust this based on your preference
             double staticDistanceWeight = 5000; // Adjust this based on your preference
             double waitTimeWeight = 1; // Adjust this based on your preference
 
-            // Calculate the priority using a weighted sum
             double deltaDist = (lastDistance - distSquared); //for maps getting closer
             this.currentPriority = (movingDistanceWeight * deltaDist) + (waitTimeWeight * this.waitTime * this.waitTime) + (staticDistanceWeight * Mth.fastInvSqrt(distSquared));
             this.lastDistance = distSquared;
@@ -80,7 +74,6 @@ public class MapAtlasesServerEvents {
             if (hasBlankPixels) {
                 for (; lastI < this.holder.data.colors.length; lastI++) {
                     if (this.holder.data.colors[lastI] == 0) {
-                        //for slice maps...
                         return;
                     }
                 }
@@ -95,8 +88,6 @@ public class MapAtlasesServerEvents {
 
     public static void onPlayerTick(Player p) {
         ServerPlayer player = ((ServerPlayer) p);
-        //not needed?
-        //if (player.isRemoved() || player.isChangingDimension() || player.hasDisconnected()) continue;
 
         var server = player.level().getServer();
         ItemStack atlas = MapAtlasesAccessUtils.getAtlasFromInventoryForMinimap(player);
@@ -108,10 +99,8 @@ public class MapAtlasesServerEvents {
         maps.addNotSynced(level);
 
         Slice slice = MapAtlasItem.getSelectedSlice(atlas, dimension);
-        // sets new center map
         MapKey activeKey = MapKey.at(maps.getScale(), player, slice);
 
-        //sync the slice below and above so we can update slice automatically
         if ((level.getGameTime() + 13) % 40 == 0) {
             sendSlicesAboveAndBelow(player, atlas, maps, activeKey);
         }
@@ -129,8 +118,6 @@ public class MapAtlasesServerEvents {
                 slice.getDiscoveryReach()
         );
 
-        // Update Map states & colors
-        //these also include an active map
         List<MapDataHolder> nearbyExistentMaps = new ArrayList<>();
         int[] offsets = {-1, 0, 1};
         for (int dx : offsets) {
@@ -146,14 +133,10 @@ public class MapAtlasesServerEvents {
 
         MapDataHolder activeInfo = maps.select(activeKey);
         if (activeInfo == null && !MapAtlasItem.isLocked(atlas)) {
-            // no map. we try creating a new one for this dimension
             maybeCreateNewMapEntry(player, atlas, maps, slice, Mth.floor(player.getX()), Mth.floor(player.getZ()));
             activeInfo = maps.select(activeKey);
         }
-        // adds center map if not already included
         if (activeInfo != null && !nearbyExistentMaps.contains(activeInfo)) nearbyExistentMaps.add(activeInfo);
-        // updateColors is *easily* the most expensive function in the entire server tick
-        // As a result, we will only ever call updateColors twice per tick (same as vanilla's limit)
         if (!nearbyExistentMaps.isEmpty()) {
             MapDataHolder selected;
             if (MapAtlasesConfig.roundRobinUpdate.get()) {
@@ -168,29 +151,22 @@ public class MapAtlasesServerEvents {
         }
 
 
-        //TODO: old code called this for all maps. Isnt it enough to just call for the visible ones?
-        // this also update banners and decorations so we do not want to update stuff we cant see
         for (var mapInfo : nearbyExistentMaps) {
             MapAtlasesAccessUtils.updateMapDataAndSync(mapInfo, player, atlas, TriState.SET_TRUE);
-            //if data has changed, a packet will be sent
         }
-        // for far away maps so we remove player marker
         MapDataHolder lastData = lastMapData.get(player);
         if (lastData != null && !nearbyExistentMaps.contains(lastData)) {
            MapAtlasesAccessUtils.updateMapDataAndSync(lastData, player, atlas, TriState.SET_FALSE);
         }
         lastMapData.put(player, activeInfo);
 
-        // Create new Map entries
         if (!MapAtlasesConfig.enableEmptyMapEntryAndFill.get() ||
                 MapAtlasItem.isLocked(atlas)) return;
 
-        //TODO : this isnt accurate and can be improved
         if (isPlayerTooFarAway(activeKey, player, scaleWidth)) {
             maybeCreateNewMapEntry(player, atlas, maps, slice, Mth.floor(player.getX()),
                     Mth.floor(player.getZ()));
         }
-        //remove existing maps and tries to fill in remaining nones
         discoveringEdges.removeIf(e -> nearbyExistentMaps.stream().anyMatch(
                 d -> d.data.centerX == e.x && d.data.centerZ == e.y));
         for (var edge : discoveringEdges) {
@@ -211,7 +187,6 @@ public class MapAtlasesServerEvents {
         }
     }
 
-    //checks if pixel of this map has been filled at this position with random offset
     private static boolean isTimeToUpdate(MapItemSavedData data, Player player,
                                           Slice slice, int min, int max) {
         int i = 1 << data.scale;
@@ -245,7 +220,6 @@ public class MapAtlasesServerEvents {
         int px = player.getBlockX();
         int pz = player.getBlockZ();
         var iterator = mapsToUpdate.entrySet().iterator();
-        //remove invalid tickets and update their priority
         float totalWeight = 0;
         while (iterator.hasNext()) {
             var entry = iterator.next();
@@ -283,7 +257,6 @@ public class MapAtlasesServerEvents {
         return Mth.square(key.mapX() - player.getX()) + Mth.square(key.mapZ() - player.getZ()) > width * width;
     }
 
-    //TODO: optimize
     private static void maybeCreateNewMapEntry(
             ServerPlayer player,
             ItemStack atlas,
@@ -294,7 +267,6 @@ public class MapAtlasesServerEvents {
     ) {
         Level level = player.level();
         if (ItemStackData.getTag(atlas) == null) {
-            // If the Atlas is "inactive", give it a pity Empty Map count
             MapAtlasItem.setEmptyMaps(atlas, MapAtlasesConfig.pityActivationMapCount.get());
         }
 
@@ -305,13 +277,10 @@ public class MapAtlasesServerEvents {
         if (!mutex.isLocked() && (emptyCount > 0 || player.isCreative() || bypassEmptyMaps)) {
             mutex.lock();
 
-            // Make the new map
             if (!player.isCreative() && !bypassEmptyMaps) {
-                //remove 1 map
                 MapAtlasItem.increaseEmptyMaps(atlas, -1);
                 atlasChanged = true;
             }
-            //validate height
             Integer height = slice.height();
             if (height != null && !maps.getHeightTree(player.level().dimension(), slice.type()).contains(height)) {
                 int error = 1;
@@ -319,14 +288,12 @@ public class MapAtlasesServerEvents {
 
             byte scale = maps.getScale();
 
-            //TODO: create custom ones
 
             ItemStack newMap = slice.createNewMap(destX, destZ, scale, player.level(), atlas);
             Integer mapId = MapAtlasesAccessUtils.getMapId(newMap);
 
             if (mapId != null) {
                 MapDataHolder newData = MapDataHolder.findFromId(level, mapId);
-                // for custom map data to be sent immediately... crappy and hacky. TODO: change custom map data impl
                 if (newData != null) {
                     MapAtlasesAccessUtils.updateMapDataAndSync(newData, player, newMap, TriState.SET_TRUE);
                 }
@@ -340,7 +307,6 @@ public class MapAtlasesServerEvents {
             player.getInventory().setChanged();
         }
         if (addedMap) {
-            // Play the sound
             player.level().playSound(null, player.blockPosition(),
                     MapAtlasesMod.ATLAS_CREATE_MAP_SOUND_EVENT.get(),
                     SoundSource.PLAYERS, 1, 1.0F);
@@ -373,7 +339,6 @@ public class MapAtlasesServerEvents {
                     } else if (j == 1 && zPlayer + reach >= zCenter + halfWidth) {
                         qJ += width;
                     }
-                    // does not add duplicates this way
                     if (!(qI == xCenter && qJ == zCenter)) {
                         results.add(new Vector2i(qI, qJ));
                     }
@@ -395,7 +360,6 @@ public class MapAtlasesServerEvents {
         maps.addNotSynced(level);
 
         Slice slice = MapAtlasItem.getSelectedSlice(atlas, dimension);
-        // sets new center map
         MapKey activeKey = MapKey.at(maps.getScale(), player, slice);
         sendSlicesAboveAndBelow(player, atlas, maps, activeKey);
 
@@ -406,11 +370,8 @@ public class MapAtlasesServerEvents {
 
         if (PlatHelper.getPlatform().isFabric()) {
             for (var info : maps.getAll()) {
-                // After reconnect/reload the client no longer has atlas map data cached.
-                // Force a carried-map sync so every atlas page is resent, not just the nearby tail.
                 MapAtlasesAccessUtils.updateMapDataAndSync(info, player, atlas, TriState.SET_TRUE);
             }
-            // Also refresh the carried inventory stack so the client atlas item keeps its saved map id list.
             player.inventoryMenu.broadcastFullState();
             if (player.containerMenu != player.inventoryMenu) {
                 player.containerMenu.broadcastFullState();

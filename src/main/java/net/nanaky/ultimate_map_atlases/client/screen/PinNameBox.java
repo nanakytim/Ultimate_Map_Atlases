@@ -18,7 +18,6 @@ import java.util.Random;
 
 public class PinNameBox extends EditBox {
 
-    //static so they persist on new screen
     private static float currentIndex = new Random().nextInt(10);
     private static float displayIndex = currentIndex;
     private static float displayIndexO = displayIndex;

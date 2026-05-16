@@ -84,6 +84,12 @@ public class MoonlightCompat {
         return decoration instanceof MapDecoration && id.startsWith(INTERNAL_PIN_PREFIX);
     }
 
+    public static final String BLOCK_MARKER_PREFIX = "block_";
+
+    public static boolean isBlockMarkerDecoration(String id, Object decoration) {
+        return decoration instanceof MapDecoration && id.startsWith(BLOCK_MARKER_PREFIX);
+    }
+
     public static int getPinIndex(String id) {
         if (!id.startsWith(INTERNAL_PIN_PREFIX)) {
             return 0;

@@ -11,7 +11,6 @@ import java.util.Objects;
 import static net.nanaky.ultimate_map_atlases.item.MapAtlasItem.HEIGHT_NBT;
 import static net.nanaky.ultimate_map_atlases.item.MapAtlasItem.TYPE_NBT;
 
-// this is a pair of map item type + y levels basically
 public final class Slice {
 
     private final MapType type;

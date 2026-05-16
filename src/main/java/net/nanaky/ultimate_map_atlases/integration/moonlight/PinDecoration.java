@@ -15,7 +15,6 @@ public class PinDecoration extends CustomMapDecoration {
         this.marker = marker;
     }
 
-    //unused TODO:improve
     public PinDecoration(MapDecorationType<?, ?> type, FriendlyByteBuf buffer) {
         super(type, buffer);
         this.marker = null;

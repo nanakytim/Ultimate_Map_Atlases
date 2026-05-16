@@ -6,6 +6,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.state.MapRenderState;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ColumnPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
@@ -200,12 +201,22 @@ public abstract class AbstractAtlasWidget {
         MapItemSavedData data = state.data;
         Map<String, MapDecoration> decorations = MapAtlasesClient.getMutableDecorations(data);
         List<DecorationHolder> customPins = new ArrayList<>(MoonlightCompat.getCustomDecorations(state));
+
+        List<Map.Entry<String, MapDecoration>> blockMarkers = new ArrayList<>();
+        for (var e : decorations.entrySet()) {
+            if (MoonlightCompat.isBlockMarkerDecoration(e.getKey(), e.getValue())) {
+                blockMarkers.add(new AbstractMap.SimpleEntry<>(e.getKey(), e.getValue())); // snapshot
+            }
+        }
+
         List<Map.Entry<String, MapDecoration>> removed = new ArrayList<>();
         List<Map.Entry<String, MapDecoration>> added = new ArrayList<>();
         for (var e : decorations.entrySet()) {
             MapDecoration dec = e.getValue();
             var type = dec.type();
             if (MoonlightCompat.isCustomDecoration(e.getKey(), dec)) {
+                removed.add(e);
+            } else if (MoonlightCompat.isBlockMarkerDecoration(e.getKey(), dec)) {
                 removed.add(e);
             } else if (type.equals(MapDecorationTypes.PLAYER_OFF_MAP) || type.equals(MapDecorationTypes.PLAYER_OFF_LIMITS)) {
                 if (data == mapWherePlayerIs.data && drawPlayerIcons) {
@@ -215,21 +226,19 @@ public abstract class AbstractAtlasWidget {
                 } else {
                     removed.add(e);
                 }
-
             } else if (type.equals(MapDecorationTypes.PLAYER)) {
-            if (!drawPlayerIcons || data != mapWherePlayerIs.data || drawMapDecorationsFallback) {
-                removed.add(e); 
-            } else {
-                int scale = 1 << data.scale;
-                float f = (float) (player.getX() - data.centerX) / scale;
-                float f1 = (float) (player.getZ() - data.centerZ) / scale;
-                // Check if player is actually within this map's bounds
-                if (Math.abs(f) <= 64 && Math.abs(f1) <= 64) {
-                    byte b0 = (byte) ((int) ((f * 2.0F) + 0.5D));
-                    byte b1 = (byte) ((int) ((f1 * 2.0F) + 0.5D));
-                    added.add(new AbstractMap.SimpleEntry<>(e.getKey(), new MapDecoration(MapDecorationTypes.PLAYER,
-                            b0, b1, getPlayerMarkerRot(player), dec.name())));
+                if (!drawPlayerIcons || data != mapWherePlayerIs.data || drawMapDecorationsFallback) {
+                    removed.add(e);
                 } else {
+                    int scale = 1 << data.scale;
+                    float f = (float) (player.getX() - data.centerX) / scale;
+                    float f1 = (float) (player.getZ() - data.centerZ) / scale;
+                    if (Math.abs(f) <= 64 && Math.abs(f1) <= 64) {
+                        byte b0 = (byte) ((int) ((f * 2.0F) + 0.5D));
+                        byte b1 = (byte) ((int) ((f1 * 2.0F) + 0.5D));
+                        added.add(new AbstractMap.SimpleEntry<>(e.getKey(), new MapDecoration(MapDecorationTypes.PLAYER,
+                                b0, b1, getPlayerMarkerRot(player), dec.name())));
+                    } else {
                         removed.add(e);
                     }
                 }
@@ -267,6 +276,20 @@ public abstract class AbstractAtlasWidget {
                 pose.popMatrix();
             });
         }
+
+        if (!blockMarkers.isEmpty()) {
+            final org.joml.Matrix3x2f savedMatrix = pose.get(new org.joml.Matrix3x2f());
+            final boolean rotates = rotatesWithPlayer;
+            final float playerYRot = player.getYRot();
+            final int mapId = state.id;  // add this
+            pendingDecorations.add(() -> {
+                pose.pushMatrix();
+                pose.set(savedMatrix);
+                renderBlockMarkersWithText(graphics, blockMarkers, rotates, playerYRot, mapId);
+                pose.popMatrix();
+            });
+        }
+
         renderCustomPins(graphics, state, customPins);
         EntityRadar.renderMapMarkers(graphics, state, player);
 
@@ -294,6 +317,49 @@ public abstract class AbstractAtlasWidget {
         }
     }
 
+    private void renderBlockMarkersWithText(GuiGraphicsExtractor graphics,
+                                            List<Map.Entry<String, MapDecoration>> blockMarkers,
+                                            boolean rotatesWithPlayer, float playerYRot, int mapId) {
+        Matrix3x2fStack pose = graphics.pose();
+        float scale = MapAtlasesClient.getDecorationsScale();
+
+        for (var entry : blockMarkers) {
+            MapDecoration decoration = entry.getValue();
+
+            float x = MAP_DIMENSION / 2f + decoration.x() / 2f;
+            float y = MAP_DIMENSION / 2f + decoration.y() / 2f;
+
+            pose.pushMatrix();
+            pose.translate(x, y);
+            if (rotatesWithPlayer) pose.rotate((float) Math.toRadians(-(180 - playerYRot)));
+            pose.scale(scale, scale);
+            pose.translate(-4f, -4f);
+            graphics.nextStratum();
+            graphics.blit(RenderPipelines.GUI_TEXTURED,
+                    MapAtlasesClient.getDecorationTexture(decoration),
+                    0, 0, 0, 0, 8, 8, 8, 8);
+            pose.popMatrix();
+
+            Component name = decoration.name()
+                    .orElseGet(() -> ClientMarkers.getBlockMarkerName(mapId, entry.getKey()));
+            if (name != null) {
+                Font font = Minecraft.getInstance().font;
+                float textScale = scale * 0.5f;
+                pose.pushMatrix();
+                pose.translate(x, y);
+                if (rotatesWithPlayer) pose.rotate((float) Math.toRadians(-(180 - playerYRot)));
+                pose.translate(0, 4f * scale + 2f);
+                pose.scale(textScale, textScale);
+                int halfW = font.width(name) / 2;
+                graphics.nextStratum();
+                graphics.fill(-halfW - 1, -1, halfW + 1, font.lineHeight + 1, 0xAA000000);
+                graphics.nextStratum();
+                graphics.text(font, name, -halfW, 0, 0xFFFFFFFF, true);
+                pose.popMatrix();
+            }
+        }
+    }
+
     private void renderDecorationsFallback(GuiGraphicsExtractor graphics, Map<String, MapDecoration> decorations, boolean rotatesWithPlayer, float playerYRot) {
         Matrix3x2fStack pose = graphics.pose();
         float scale = MapAtlasesClient.getDecorationsScale();
@@ -302,14 +368,16 @@ public abstract class AbstractAtlasWidget {
             if (MoonlightCompat.isCustomDecoration(entry.getKey(), decoration)) {
                 continue;
             }
+            if (MoonlightCompat.isBlockMarkerDecoration(entry.getKey(), decoration)) {
+                continue;
+            }
 
             float x = MAP_DIMENSION / 2f + decoration.x() / 2f;
-            float y = MAP_DIMENSION / 2f + decoration.y() / 2f;;
+            float y = MAP_DIMENSION / 2f + decoration.y() / 2f;
 
             pose.pushMatrix();
             pose.translate(x, y);
             if (rotatesWithPlayer) {
-                // counter-rotate to keep decorations upright
                 pose.rotate((float) Math.toRadians(-(180 - playerYRot)));
             }
             pose.scale(scale, scale);
@@ -323,7 +391,6 @@ public abstract class AbstractAtlasWidget {
                     0, 0, 0, 0, 8, 8, 8, 8);
             pose.popMatrix();
 
-            // Text label
             decoration.name().ifPresent(name -> {
                 Font font = Minecraft.getInstance().font;
                 float textScale = MapAtlasesClient.getDecorationsScale() * 0.5f;

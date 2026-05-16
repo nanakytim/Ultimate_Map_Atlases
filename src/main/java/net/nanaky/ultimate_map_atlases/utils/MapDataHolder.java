@@ -7,6 +7,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.MapItem;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BedBlock;
+import net.minecraft.world.level.block.CampfireBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BedPart;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.saveddata.maps.MapBanner;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import org.jetbrains.annotations.NotNull;
@@ -18,8 +23,11 @@ import net.nanaky.ultimate_map_atlases.map_collection.MapKey;
 import net.nanaky.ultimate_map_atlases.mixin.MapItemSavedDataAccessor;
 import net.nanaky.ultimate_map_atlases.networking.MapAtlasesNetworking;
 import net.nanaky.ultimate_map_atlases.networking.S2CDebugUpdateMapPacket;
+import net.nanaky.ultimate_map_atlases.networking.C2SToggleBlockMarkerPacket;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,7 +37,6 @@ public class MapDataHolder {
     public final String stringId;
     public final MapItemSavedData data;
 
-    // redundant info, cache basically as we use this for data structures
     public final Slice slice;
     public final MapType type;
     @Nullable
@@ -51,7 +58,6 @@ public class MapDataHolder {
 
     @Nullable
     public static MapDataHolder findFromId(Level level, int id) {
-        //try all known types
         for (var t : MapType.values()) {
             var d = t.getMapData(level, id);
             if (d != null) {
@@ -68,13 +74,9 @@ public class MapDataHolder {
     public void updateMap(ServerPlayer player) {
         if (canMultiThread(player.level())) {
             EXECUTORS.submit(() -> {
-                //the only unsafe operation that this does is data.getHoldingPlayer
-                //we need to redirect it.
                 ((MapItem) type.filled).update(player.level(), player, data);
             });
-            //update markers on the main thread. has to be done because block entities cant be accessed off thread
 
-            //calculate range
             updateMarkers(player, 128);
 
         } else {
@@ -99,14 +101,13 @@ public class MapDataHolder {
         int frenquency = MapAtlasesConfig.markersUpdatePeriod.get();
         if (step % frenquency == 0) {
             MapItemSavedDataAccessor accessor = (MapItemSavedDataAccessor) data;
+            Level level = player.level();
+
             var markers = accessor.getBannerMarkers();
             Iterator<MapBanner> iterator = markers.values().iterator();
-
-            Level level = player.level();
             while (iterator.hasNext()) {
                 var banner = iterator.next();
                 BlockPos pos = banner.pos();
-                //update all loaded in range
                 if (pos.distToCenterSqr(player.position()) < (maxRange * maxRange)) {
                     if (level.isLoaded(pos)) {
                         MapBanner mapbanner1 = MapBanner.fromWorld(level, pos);
@@ -117,10 +118,32 @@ public class MapDataHolder {
                     }
                 }
             }
-            if (MapAtlasesMod.MOONLIGHT) MoonlightCompat.updateMarkers(data, player, maxRange);
 
+            List<String> blockKeysToRemove = new ArrayList<>();
+            for (String key : accessor.getDecorations().keySet()) {
+                if (!key.startsWith("block_")) continue;
+                BlockPos pos = C2SToggleBlockMarkerPacket.blockPosFromKey(key);
+                if (pos.distToCenterSqr(player.position()) < (maxRange * maxRange)) {
+                    if (level.isLoaded(pos)) {
+                        BlockState state = level.getBlockState(pos);
+                        boolean valid = (state.getBlock() instanceof BedBlock
+                                        && state.getValue(BlockStateProperties.BED_PART) == BedPart.HEAD)
+                                    || state.getBlock() instanceof CampfireBlock;
+                        if (!valid) blockKeysToRemove.add(key);
+                    }
+                }
+            }
+            for (String key : blockKeysToRemove) {
+                accessor.invokeRemoveDecoration(key);
+                accessor.invokeSetDecorationsDirty();
+                data.setDirty();
+            }
+
+            if (MapAtlasesMod.MOONLIGHT) MoonlightCompat.updateMarkers(data, player, maxRange);
         }
     }
+
+
 
     private static final ExecutorService EXECUTORS = Executors.newFixedThreadPool(6);
 

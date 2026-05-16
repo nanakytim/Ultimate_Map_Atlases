@@ -1,12 +1,12 @@
 package net.nanaky.ultimate_map_atlases;
 
-
 import net.nanaky.moonlight.api.platform.PlatHelper;
 import net.nanaky.moonlight.api.platform.RegHelper;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -16,6 +16,7 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.level.saveddata.maps.MapDecorationType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import net.nanaky.ultimate_map_atlases.client.MapAtlasesClient;
@@ -34,7 +35,6 @@ import net.nanaky.ultimate_map_atlases.utils.TriState;
 
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
-
 
 public class MapAtlasesMod {
 
@@ -62,6 +62,25 @@ public class MapAtlasesMod {
     public static final boolean TWILIGHTFOREST = PlatHelper.isModLoaded("twilightforest");
     public static final boolean IMMEDIATELY_FAST = PlatHelper.isModLoaded("immediatelyfast");
 
+    public static final Holder<MapDecorationType> BED_WHITE_DECORATION;
+    public static final Holder<MapDecorationType> BED_ORANGE_DECORATION;
+    public static final Holder<MapDecorationType> BED_MAGENTA_DECORATION;
+    public static final Holder<MapDecorationType> BED_LIGHT_BLUE_DECORATION;
+    public static final Holder<MapDecorationType> BED_YELLOW_DECORATION;
+    public static final Holder<MapDecorationType> BED_LIME_DECORATION;
+    public static final Holder<MapDecorationType> BED_PINK_DECORATION;
+    public static final Holder<MapDecorationType> BED_GRAY_DECORATION;
+    public static final Holder<MapDecorationType> BED_LIGHT_GRAY_DECORATION;
+    public static final Holder<MapDecorationType> BED_CYAN_DECORATION;
+    public static final Holder<MapDecorationType> BED_PURPLE_DECORATION;
+    public static final Holder<MapDecorationType> BED_BLUE_DECORATION;
+    public static final Holder<MapDecorationType> BED_BROWN_DECORATION;
+    public static final Holder<MapDecorationType> BED_GREEN_DECORATION;
+    public static final Holder<MapDecorationType> BED_RED_DECORATION;
+    public static final Holder<MapDecorationType> BED_BLACK_DECORATION;
+    public static final Holder<MapDecorationType> CAMPFIRE_DECORATION;
+    public static final Holder<MapDecorationType> SOUL_CAMPFIRE_DECORATION;
+
     public static void init() {
         MapAtlasesNetworking.init();
         MapAtlasLockIcon.register();
@@ -72,23 +91,11 @@ public class MapAtlasesMod {
         }
         RegHelper.addItemsToTabsRegistration(MapAtlasesMod::addItemsToTabs);
 
-        //TODO
-        //make map texture updates happen way less frequently. Delay upload maybe
-        //lectern marker
-        //sound
-        //soap clear recipe
-        //spyglass zoom in curio with keybind
-        //auto waystone marker
-        //interdimensional marker
-        //antique in cart table
-
-
         if (MOONLIGHT) MoonlightCompat.init();
         if (SUPPLEMENTARIES) SupplementariesCompat.init();
     }
 
     static {
-        // Register special recipes
         MAP_ATLAS_CREATE_RECIPE = RegHelper.registerRecipeSerializer(res("crafting_atlas"),
                 () -> MapAtlasCreateRecipe.SERIALIZER);
         MAP_ATLAS_ADD_RECIPE = RegHelper.registerRecipeSerializer(res("adding_atlas"),
@@ -97,7 +104,6 @@ public class MapAtlasesMod {
                 () -> MapAtlasesCutExistingRecipe.SERIALIZER);
         MAP_ANTIQUE_RECIPE = RegHelper.registerRecipeSerializer(res("antique_atlas"),
                 () -> AntiqueAtlasRecipe.SERIALIZER);
-        // Register items
         MAP_ATLAS = RegHelper.registerItem(res("atlas"),
                 () -> new MapAtlasItem(new Item.Properties()
                         .setId(ResourceKey.create(Registries.ITEM, res("atlas")))
@@ -110,8 +116,33 @@ public class MapAtlasesMod {
                         .cacheEncoding()
                         .build());
 
+        BED_WHITE_DECORATION      = registerDecorationType("bed_white",      res("white_bed"));
+        BED_ORANGE_DECORATION     = registerDecorationType("bed_orange",     res("orange_bed"));
+        BED_MAGENTA_DECORATION    = registerDecorationType("bed_magenta",    res("magenta_bed"));
+        BED_LIGHT_BLUE_DECORATION = registerDecorationType("bed_light_blue", res("light_blue_bed"));
+        BED_YELLOW_DECORATION     = registerDecorationType("bed_yellow",     res("yellow_bed"));
+        BED_LIME_DECORATION       = registerDecorationType("bed_lime",       res("lime_bed"));
+        BED_PINK_DECORATION       = registerDecorationType("bed_pink",       res("pink_bed"));
+        BED_GRAY_DECORATION       = registerDecorationType("bed_gray",       res("gray_bed"));
+        BED_LIGHT_GRAY_DECORATION = registerDecorationType("bed_light_gray", res("light_gray_bed"));
+        BED_CYAN_DECORATION       = registerDecorationType("bed_cyan",       res("cyan_bed"));
+        BED_PURPLE_DECORATION     = registerDecorationType("bed_purple",     res("purple_bed"));
+        BED_BLUE_DECORATION       = registerDecorationType("bed_blue",       res("blue_bed"));
+        BED_BROWN_DECORATION      = registerDecorationType("bed_brown",      res("brown_bed"));
+        BED_GREEN_DECORATION      = registerDecorationType("bed_green",      res("green_bed"));
+        BED_RED_DECORATION        = registerDecorationType("bed_red",        res("red_bed"));
+        BED_BLACK_DECORATION      = registerDecorationType("bed_black",      res("black_bed"));
+        CAMPFIRE_DECORATION       = registerDecorationType("campfire",       res("campfire"));
+        SOUL_CAMPFIRE_DECORATION  = registerDecorationType("soul_campfire",  res("soul_campfire"));
     }
 
+    private static Holder<MapDecorationType> registerDecorationType(String registryName, Identifier assetId) {
+        MapDecorationType type = new MapDecorationType(assetId, false, -1, false, false);
+        return Registry.registerForHolder(
+                BuiltInRegistries.MAP_DECORATION_TYPE,
+                Identifier.fromNamespaceAndPath(MOD_ID, registryName),
+                type);
+    }
 
     public static void addItemsToTabs(RegHelper.ItemToTabEvent event) {
         event.addAfter(CreativeModeTabs.TOOLS_AND_UTILITIES, i -> i.is(Items.MAP), MAP_ATLAS.get());
@@ -134,12 +165,9 @@ public class MapAtlasesMod {
         hack = value;
     }
 
-
     private static TriState hack = TriState.PASS;
 
     public static boolean rangeCheck(int distance, int range, int scale) {
         return distance <= (range + 1 + scale) * (range + 1 + scale);
     }
-
-
 }

@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.nanaky.ultimate_map_atlases.client.MapAtlasesClient;
 import net.nanaky.ultimate_map_atlases.client.MapAtlasesClientImpl;
 import net.nanaky.ultimate_map_atlases.lifecycle.MapAtlasesClientEvents;
+import net.nanaky.ultimate_map_atlases.client.BlockMarkerEventsClient;
 
 public class UltimateMapAtlasesClient implements ClientModInitializer {
 
@@ -18,6 +19,7 @@ public class UltimateMapAtlasesClient implements ClientModInitializer {
     public static void clientInit() {
         registerKeyMappings();
         MapAtlasesClientImpl.init();
+        BlockMarkerEventsClient.register();
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player != null) MapAtlasesClient.cachePlayerState(client.player);
             if (client.level != null) MapAtlasesClientEvents.onClientTick(client, client.level);

@@ -43,10 +43,6 @@ public class MapAtlasesAccessUtils {
         return Integer.parseInt(id.split("_")[1]);
     }
 
-    /**
-     * Gets an atlas from the player's inventory, scanning the entire inventory.
-     * This is used for server-side minimap updates and should find any atlas in inventory.
-     */
     @NotNull
     public static ItemStack getAtlasFromInventoryForMinimap(Player player) {
         ItemStack atlasFromMainHand = player.getMainHandItem();
@@ -142,18 +138,12 @@ public class MapAtlasesAccessUtils {
     }
 
     public static void forceFullResync(MapDataHolder holder, ServerPlayer player, ItemStack atlas) {
-        // Step 1: ensure this player has a HoldingPlayer entry and decorations are current
         MapAtlasesMod.setMapInInventoryHack(TriState.SET_TRUE);
         holder.data.tickCarriedBy(player, atlas, null);
         MapAtlasesMod.setMapInInventoryHack(TriState.PASS);
-
-        // Step 2: mark the full 128×128 pixel range dirty for every current HoldingPlayer,
-        // including the one just created above. Two corner calls expand the rect to [0–127, 0–127].
         MapItemSavedDataAccessor accessor = (MapItemSavedDataAccessor) holder.data;
         accessor.invokeSetColorsDirty(0, 0);
         accessor.invokeSetColorsDirty(127, 127);
-
-        // Step 3: send — dirty region is now guaranteed non-empty
         syncMapDataToClient(holder, player);
     }
 }

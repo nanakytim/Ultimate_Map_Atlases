@@ -67,7 +67,6 @@ public abstract class LecternBlockMixin extends Block {
                 if (level.isClientSide()) {
 
                     if(atlas.getItem() instanceof MapAtlasItem) {
-                        //MapAtlasesClient.openScreen(atlas, lbe);
                     }
                 } else {
                     MapAtlasItem.syncAndOpenGui((ServerPlayer) player, atlas, C2S2COpenAtlasScreenPacket.OpenSource.LECTERN, null, pos, false);

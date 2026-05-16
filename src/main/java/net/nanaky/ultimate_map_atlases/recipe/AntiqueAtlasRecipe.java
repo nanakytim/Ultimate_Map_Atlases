@@ -45,7 +45,6 @@ public class AntiqueAtlasRecipe extends CustomRecipe {
         if (!MapAtlasesMod.SUPPLEMENTARIES) return false;
         ItemStack atlas = ItemStack.EMPTY;
         ItemStack ink = ItemStack.EMPTY;
-        // ensure 1 and one only atlas
         for (int j = 0; j < inv.size(); ++j) {
             ItemStack itemstack = inv.getItem(j);
             if (itemstack.is(MapAtlasesMod.MAP_ATLAS.get())) {
@@ -70,7 +69,6 @@ public class AntiqueAtlasRecipe extends CustomRecipe {
         Level level = levelRef.get();
         ItemStack newAtlas = ItemStack.EMPTY;
         ItemStack oldAtlas = ItemStack.EMPTY;
-        // ensure 1 and one only atlas
         for (int j = 0; j < inv.size(); ++j) {
             ItemStack itemstack = inv.getItem(j);
             if (itemstack.is(MapAtlasesMod.MAP_ATLAS.get())) {
@@ -79,8 +77,6 @@ public class AntiqueAtlasRecipe extends CustomRecipe {
             }
         }
 
-        // Get the Map Ids in the Grid
-        // Set NBT Data
         IMapCollection maps = MapAtlasItem.getMaps(newAtlas, level);
         IMapCollection oldMaps = MapAtlasItem.getMaps(oldAtlas, level);
         for (MapDataHolder holder : maps.getAll()) {

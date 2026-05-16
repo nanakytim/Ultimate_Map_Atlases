@@ -51,7 +51,6 @@ public class MapAtlasItem extends Item {
     }
 
     public static void removeMap(ItemStack atlas, int mapId, ServerPlayer player) {
-        //TODO: remove map
         var data = IMapCollection.get(atlas, player.level());
         MapDataHolder holder = MapDataHolder.findFromId(player.level(), mapId);
         boolean removed = data.remove(holder);
@@ -97,7 +96,7 @@ public class MapAtlasItem extends Item {
                     .withStyle(ChatFormatting.GRAY));
         }
         if (MapAtlasesMod.SUPPLEMENTARIES && SupplementariesCompat.hasAntiqueInk(stack)) {
-            tooltip.accept(Component.translatable("item.map_atlases.atlas.supplementaries_antique")
+            tooltip.accept(Component.translatable("item.map_atlases.atlas.DELETEMEEEEEEDELETEMEEEEEEDELETEMEEEEEEDELETEMEEEEEEEE")
                     .withStyle(ChatFormatting.GRAY));
         }
     }
@@ -118,7 +117,6 @@ public class MapAtlasItem extends Item {
             }
             ItemStackData.update(stack, t -> t.remove(LOCKED_NBT));
             if (player.level().isClientSide()) {
-                // player.sendSystemMessage(Component.translatable(!wasLocked ? "message.map_atlases.locked" : "message.map_atlases.unlocked"));
             }
             return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
         }
@@ -131,7 +129,6 @@ public class MapAtlasItem extends Item {
 
     private static void convertOldAtlas(Level level, ItemStack stack) {
         CompoundTag tag = ItemStackData.getTag(stack);
-        //convert old atlas
         if (tag != null && tag.contains("maps")) {
             IMapCollection maps = getMaps(stack, level);
             for (var i : tag.getIntArray("maps").orElseGet(() -> new int[0])) {
@@ -141,7 +138,6 @@ public class MapAtlasItem extends Item {
         }
     }
 
-    // convert lectern
     @Override
     public InteractionResult useOn(UseOnContext context) {
         Player player = context.getPlayer();
@@ -176,7 +172,6 @@ public class MapAtlasItem extends Item {
     }
 
 
-    // Utilities functions
 
 
     public static void syncAndOpenGui(
@@ -190,15 +185,10 @@ public class MapAtlasItem extends Item {
         if (atlas.isEmpty()) {
             return;
         }
-        //we need to send all data for all dimensions as they are not sent automatically
         IMapCollection maps = MapAtlasItem.getMaps(atlas, player.level());
         for (var info : maps.getAll()) {
-            // Force atlas pages to be treated as carried during initial GUI sync so old pages
-            // are resent even if vanilla no longer recognizes atlas stacks as map carriers.
             MapAtlasesAccessUtils.updateMapDataAndSync(info, player, atlas, TriState.SET_TRUE);
         }
-        // Fabric 26.1 is not reliably syncing the atlas custom data to the client before GUI open.
-        // Force a full inventory/menu refresh so the client atlas stack has the current map id list.
         player.inventoryMenu.broadcastFullState();
         if (player.containerMenu != player.inventoryMenu) {
             player.containerMenu.broadcastFullState();
@@ -228,26 +218,6 @@ public class MapAtlasItem extends Item {
             });
         }
     }
-    //TODO:
-/*
-    public static boolean decreaseSlice(ItemStack atlas, Level level) {
-        IMapCollection maps = MapAtlasItem.getMaps(atlas, level);
-        int current = selectedSlice.heightOrTop();
-        MapType type = selectedSlice.type();
-        ResourceKey<Level> dim = selectedSlice.dimension();
-        Integer newHeight = maps.getHeightTree(dim, type).floor(current - 1);
-        return updateSlice(Slice.of(type, newHeight, dim));
-    }
-
-    //TODO: make static
-    public static boolean increaseSlice(ItemStack atlas, Level level) {
-        IMapCollection maps = MapAtlasItem.getMaps(atlas, level);
-        int current = selectedSlice.heightOrTop();
-        MapType type = selectedSlice.type();
-        ResourceKey<Level> dim = selectedSlice.dimension();
-        Integer newHeight = maps.getHeightTree(dim, type).ceiling(current + 1);
-        return updateSlice(Slice.of(type, newHeight, dim));
-    }*/
     public static IMapCollection getMaps(ItemStack stack, Level level) {
        return IMapCollection.get(stack, level);
     }
@@ -319,7 +289,6 @@ public class MapAtlasItem extends Item {
     }
 
     private static void validateSelectedSlices(ItemStack pStack, Level level) {
-        // Populate default slices
         var maps = getMaps(pStack, level);
         var dim = maps.getAvailableDimensions();
         for (var d : dim) {

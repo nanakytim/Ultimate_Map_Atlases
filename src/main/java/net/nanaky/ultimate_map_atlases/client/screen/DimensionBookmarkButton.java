@@ -64,7 +64,6 @@ public class DimensionBookmarkButton extends BookmarkButton {
 
     @Override
     public void playDownSound(SoundManager pHandler) {
-      //  super.playDownSound(pHandler);
         pHandler.play(SimpleSoundInstance.forUI( MapAtlasesMod.ATLAS_PAGE_TURN_SOUND_EVENT.get(), 1.0F,
                 (float)(double)   MapAtlasesClientConfig.soundScalar.get()));
     }
