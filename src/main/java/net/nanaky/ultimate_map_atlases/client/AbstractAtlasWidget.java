@@ -16,7 +16,8 @@ import net.minecraft.world.level.saveddata.maps.MapId;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3x2fStack;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesClientConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.EntityRadar;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.ClientMarkers;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.CustomDecorationButton;
@@ -25,6 +26,11 @@ import net.nanaky.ultimate_map_atlases.integration.moonlight.MoonlightCompat;
 import net.nanaky.ultimate_map_atlases.utils.DecorationHolder;
 import net.nanaky.ultimate_map_atlases.utils.MapDataHolder;
 import net.nanaky.ultimate_map_atlases.utils.MapType;
+import net.minecraft.resources.Identifier;
+import net.nanaky.ultimate_map_atlases.map_collection.IMapCollection;
+import net.nanaky.ultimate_map_atlases.utils.PriorityMarkerInfo;
+import net.nanaky.ultimate_map_atlases.utils.PriorityMarkers;
+import net.nanaky.ultimate_map_atlases.utils.Slice;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -160,6 +166,97 @@ public abstract class AbstractAtlasWidget {
         MapAtlasesClient.setIsDrawingAtlas(false);
     }
 
+/**
+ * Renders "priority" (pinned) decorations on the rim of this widget when their
+ * world position falls outside the area currently covered by the rendered maps -
+ * mirroring vanilla's clamped player-off-map icon, but with the real decoration
+ * icon and name.
+ */
+protected void renderPriorityMarkers(GuiGraphicsExtractor graphics, Font font, Player player,
+                                      int drawX, int drawY, int drawWidth, int drawHeight,
+                                      float zoomLevelDim,
+                                      float rimHalfWidth, float rimHalfHeight,
+                                      IMapCollection maps, Slice slice, float extraScale) {
+    if (maps == null || slice == null || mapBlocksSize <= 0 || zoomLevelDim <= 0) {
+        return;
+    }
+
+    List<PriorityMarkerInfo> markers = PriorityMarkers.collect(maps, slice);
+    if (markers.isEmpty()) {
+        return;
+    }
+
+    float widgetScale = drawWidth / (float) (atlasesCount * MAP_DIMENSION);
+    float zoomScale = atlasesCount / zoomLevelDim;
+    float combinedScale = widgetScale * zoomScale;
+    int scaleIndex = mapBlocksSize / MAP_DIMENSION;
+
+    float centerX = drawX + drawWidth / 2f;
+    float centerY = drawY + drawHeight / 2f;
+
+    float theta = 0;
+    if (rotatesWithPlayer) {
+        theta = (float) Math.toRadians(180 - player.getYRot() + mapRotationDegrees);
+    } else if (mapRotationDegrees != 0) {
+        theta = (float) Math.toRadians(mapRotationDegrees);
+    }
+    float cos = Mth.cos(theta);
+    float sin = Mth.sin(theta);
+
+    float iconHalf = 4 * extraScale;
+    float textWiggle = (4f * extraScale + 2f) + font.lineHeight * (extraScale * 0.25f);
+    float skipBoundX = Math.max(rimHalfWidth - iconHalf + textWiggle, 1f);
+    float skipBoundZ = Math.max(rimHalfHeight - iconHalf + textWiggle, 1f);
+    float clampBoundX = Math.max(rimHalfWidth - iconHalf, 1f);
+    float clampBoundZ = Math.max(rimHalfHeight - iconHalf, 1f);
+
+    Matrix3x2fStack pose = graphics.pose();
+
+    for (PriorityMarkerInfo marker : markers) {
+        float localX = (float) ((marker.worldX() - currentXCenter) / scaleIndex);
+        float localZ = (float) ((marker.worldZ() - currentZCenter) / scaleIndex);
+
+        float rx = localX * cos - localZ * sin;
+        float rz = localX * sin + localZ * cos;
+
+        float screenX = rx * combinedScale;
+        float screenZ = rz * combinedScale;
+
+        if (Math.abs(screenX) <= skipBoundX && Math.abs(screenZ) <= skipBoundZ) {
+            continue;
+        }
+
+        float tX = screenX != 0 ? clampBoundX / Math.abs(screenX) : Float.MAX_VALUE;
+        float tZ = screenZ != 0 ? clampBoundZ / Math.abs(screenZ) : Float.MAX_VALUE;
+        float t = Math.min(tX, tZ);
+
+        float pointX = centerX + screenX * t;
+        float pointY = centerY + screenZ * t;
+
+        graphics.nextStratum();
+        pose.pushMatrix();
+        pose.translate(pointX, pointY);
+        pose.scale(extraScale, extraScale);
+        pose.translate(-4f, -4f);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, marker.texture(), 0, 0, 0, 0, 8, 8, 8, 8);
+        pose.popMatrix();
+
+        Component name = marker.name();
+        if (!name.getString().isEmpty()) {
+            int halfTextWidth = font.width(name) / 2;
+            float textScale = extraScale * 0.5f;
+
+            graphics.nextStratum();
+            pose.pushMatrix();
+            pose.translate(pointX, pointY + 4f * extraScale + 2f);
+            pose.scale(textScale, textScale);
+            graphics.fill(-halfTextWidth - 1, -1, halfTextWidth + 1, font.lineHeight + 1, 0xAA000000);
+            graphics.text(font, name, -halfTextWidth, 0, 0xFFFFFFFF, true);
+            pose.popMatrix();
+        }
+    }
+}
+
     protected void applyScissors(GuiGraphicsExtractor graphics, int x, int y, int x1, int y1) {
         graphics.enableScissor(x, y, x1, y1);
     }
@@ -249,7 +346,7 @@ public abstract class AbstractAtlasWidget {
         added.forEach(d -> decorations.put(d.getKey(), d.getValue()));
         MapAtlasesClient.markDecorationsDirty(data);
 
-        if (MapAtlasesClientConfig.showsMapBackground.get()) {
+        if (UltimateMapAtlasesClientConfigManager.INSTANCE.showsMapBackground) {
             graphics.nextStratum();
             graphics.blit(RenderPipelines.GUI_TEXTURED, MAP_BACKGROUND_TEXTURE, 0, 0,
                     0, 0, MAP_DIMENSION, MAP_DIMENSION, MAP_DIMENSION, MAP_DIMENSION);

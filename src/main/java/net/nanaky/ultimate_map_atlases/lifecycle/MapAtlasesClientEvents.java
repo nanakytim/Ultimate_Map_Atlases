@@ -13,8 +13,7 @@ import net.minecraft.world.level.material.MapColor;
 import org.jetbrains.annotations.Nullable;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
 import net.nanaky.ultimate_map_atlases.client.MapAtlasesClient;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesClientConfig;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
 import net.nanaky.ultimate_map_atlases.integration.SupplementariesClientCompat;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.ClientMarkers;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.EntityRadar;
@@ -37,7 +36,7 @@ public class MapAtlasesClientEvents {
         if (MapAtlasesMod.SUPPLEMENTARIES && (gameTime + 27) % 40 == 0) {
             SupplementariesClientCompat.onClientTick(level);
         }
-        else if (client.screen == null && (gameTime + 5) % 40 == 0 && MapAtlasesClientConfig.automaticSlice.get()) {
+        else if (client.screen == null && (gameTime + 5) % 40 == 0 && UltimateMapAtlasesClientConfigManager.INSTANCE.automaticSlice) {
             ItemStack atlas = MapAtlasesClient.getCurrentActiveAtlas();
             if (!atlas.isEmpty()) {
                 IMapCollection maps = MapAtlasItem.getMaps(atlas, level);
@@ -46,7 +45,7 @@ public class MapAtlasesClientEvents {
                 maybeChangeSlice(client.player, level, maps, s, atlas);
             }
         }
-        else if ((gameTime + 7) % 40 == 0 && MapAtlasesClientConfig.entityRadar.get() && MapAtlasesConfig.entityRadar.get()) {
+        else if ((gameTime + 7) % 40 == 0 && UltimateMapAtlasesClientConfigManager.INSTANCE.entityRadar && UltimateMapAtlasesClientConfigManager.INSTANCE.entityRadar) {
             Player player = client.player;
             if (player != null) {
                 EntityRadar.onClientTick(player);
@@ -70,7 +69,7 @@ public class MapAtlasesClientEvents {
         }
 
         if (keyMapping == MapAtlasesClient.PLACE_PIN_KEYBIND) {
-            if (MapAtlasesClientConfig.moonlightCompat.get()) {
+            if (UltimateMapAtlasesClientConfigManager.INSTANCE.moonlightCompat) {
                 if (client.level == null || client.player == null) return;
                 ItemStack atlas = MapAtlasesAccessUtils.getAtlasFromPlayerByConfig(client.player);
                 if (atlas.getItem() instanceof MapAtlasItem) {

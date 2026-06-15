@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
 import net.nanaky.ultimate_map_atlases.client.AtlasInHandRenderer;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesClientConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
 
 @Mixin(ItemInHandRenderer.class)
 public abstract class ItemInHandRendererMixin {
@@ -29,7 +29,7 @@ public abstract class ItemInHandRendererMixin {
             ordinal = 0,
             target = "Lnet/minecraft/world/item/ItemStack;has(Lnet/minecraft/core/component/DataComponentType;)Z"))
     public boolean renderMapAtlasItem(boolean isNormalMap, @Local ItemStack pStack){
-        if(pStack.is(MapAtlasesMod.MAP_ATLAS.get()) && MapAtlasesClientConfig.inHandMode.get().isOn(pStack)){
+        if(pStack.is(MapAtlasesMod.MAP_ATLAS.get()) && UltimateMapAtlasesClientConfigManager.INSTANCE.inHandMode.isOn(pStack)){
             mapatlases$renderingAtlas = true;
             return true;
         }

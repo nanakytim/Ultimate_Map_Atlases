@@ -7,6 +7,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.entity.player.StackedItemContents;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.MapItem;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
@@ -15,10 +16,15 @@ import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.display.RecipeDisplay;
+import net.minecraft.world.item.crafting.display.ShapelessCraftingRecipeDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay.ItemSlotDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay.ItemStackSlotDisplay;
 import net.minecraft.world.level.Level;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
 import net.nanaky.ultimate_map_atlases.PlatStuff;
 import net.nanaky.ultimate_map_atlases.item.MapAtlasItem;
+import net.nanaky.ultimate_map_atlases.item.MapAtlasLockIcon;
 import net.nanaky.ultimate_map_atlases.map_collection.IMapCollection;
 import net.nanaky.ultimate_map_atlases.utils.MapAtlasesAccessUtils;
 import net.nanaky.ultimate_map_atlases.utils.MapDataHolder;
@@ -54,7 +60,8 @@ public class MapAtlasCreateRecipe extends CustomRecipe {
         this.isSimple = PlatStuff.isSimple(ingredients);
         this.placementInfo = PlacementInfo.create(List.of(
                 Ingredient.of(Items.SLIME_BALL, Items.HONEY_BOTTLE),
-                Ingredient.of(Items.BOOK)
+                Ingredient.of(Items.BOOK),
+                Ingredient.of(Items.MAP, Items.FILLED_MAP)
         ));
     }
 
@@ -118,6 +125,7 @@ public class MapAtlasCreateRecipe extends CustomRecipe {
         }
         
         ItemStack atlas = new ItemStack(MapAtlasesMod.MAP_ATLAS.get());
+        atlas.set(MapAtlasLockIcon.LOCKED, true);
         
         if (isFilledMap) {
             Integer mapId = MapAtlasesAccessUtils.getMapId(mapItemStack);
@@ -140,6 +148,21 @@ public class MapAtlasCreateRecipe extends CustomRecipe {
         }
         
         return atlas;
+    }
+
+    @Override
+    public List<RecipeDisplay> display() {
+        List<Ingredient> displayIngredients = new ArrayList<>(this.ingredients);
+        displayIngredients.add(Ingredient.of(Items.MAP, Items.FILLED_MAP));
+        ItemStack lockedAtlas = new ItemStack(MapAtlasesMod.MAP_ATLAS.get());
+        lockedAtlas.set(MapAtlasLockIcon.LOCKED, true);
+        return List.of(
+            new ShapelessCraftingRecipeDisplay(
+                displayIngredients.stream().map(Ingredient::display).toList(),
+                new ItemStackSlotDisplay(ItemStackTemplate.fromNonEmptyStack(lockedAtlas)),
+                new ItemSlotDisplay(Items.CRAFTING_TABLE)
+            )
+        );
     }
 
     @Override

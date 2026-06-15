@@ -5,7 +5,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesClientConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
 import net.nanaky.ultimate_map_atlases.utils.Slice;
 
 import static net.nanaky.ultimate_map_atlases.client.MapAtlasesClient.ATLAS_BACKGROUND_TEXTURE;
@@ -15,7 +15,7 @@ public class SliceBookmarkButton extends BookmarkButton {
     private static final int BUTTON_H = 21;
     private static final int BUTTON_W = 27;
 
-    protected final boolean compact = MapAtlasesClientConfig.worldMapCompactSliceIndicator.get();
+    protected final boolean compact = UltimateMapAtlasesClientConfigManager.INSTANCE.worldMapCompactSliceIndicator;
 
     private Slice slice;
     private boolean hasMoreThan1Type = true;

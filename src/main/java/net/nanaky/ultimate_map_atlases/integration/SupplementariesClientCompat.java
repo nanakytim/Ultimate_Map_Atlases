@@ -8,8 +8,8 @@ import net.minecraft.world.level.saveddata.maps.MapId;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
 import net.nanaky.ultimate_map_atlases.client.MapAtlasesClient;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesClientConfig;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 import net.nanaky.ultimate_map_atlases.item.MapAtlasItem;
 
 import java.io.IOException;
@@ -32,7 +32,7 @@ public class SupplementariesClientCompat {
     }
 
     public static void onClientTick(ClientLevel level) {
-        boolean active = MapAtlasesConfig.lightMap.get();
+        boolean active = UltimateMapAtlasesServerConfigManager.INSTANCE.lightMap;
         if (lightMapActive != active) {
             lightMapActive = active;
             invokeSetActive(active);
@@ -46,7 +46,7 @@ public class SupplementariesClientCompat {
             return;
         }
 
-        boolean isDayTexture = !MapAtlasesClientConfig.nightLightMap.get() || isDay(level);
+        boolean isDayTexture = !UltimateMapAtlasesClientConfigManager.INSTANCE.nightLightMap || isDay(level);
         if (usingDayTexture == null || usingDayTexture != isDayTexture) {
             usingDayTexture = isDayTexture;
             invokeSetLightMap(isDayTexture ? dayTexture : nightTexture);

@@ -10,7 +10,8 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.world.level.Level;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesClientConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
 
 import static net.nanaky.ultimate_map_atlases.client.MapAtlasesClient.ATLAS_BACKGROUND_TEXTURE;
 import static net.nanaky.ultimate_map_atlases.client.MapAtlasesClient.DIMENSION_TEXTURE_ORDER;
@@ -65,6 +66,6 @@ public class DimensionBookmarkButton extends BookmarkButton {
     @Override
     public void playDownSound(SoundManager pHandler) {
         pHandler.play(SimpleSoundInstance.forUI( MapAtlasesMod.ATLAS_PAGE_TURN_SOUND_EVENT.get(), 1.0F,
-                (float)(double)   MapAtlasesClientConfig.soundScalar.get()));
+                (float)(double)   UltimateMapAtlasesClientConfigManager.INSTANCE.soundScalar));
     }
 }

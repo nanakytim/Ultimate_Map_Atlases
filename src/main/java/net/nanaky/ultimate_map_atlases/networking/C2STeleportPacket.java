@@ -14,7 +14,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 import org.jetbrains.annotations.Nullable;
 import net.nanaky.ultimate_map_atlases.PlatStuff;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 
 import java.util.EnumSet;
 import java.util.Locale;
@@ -81,7 +81,7 @@ public class C2STeleportPacket implements Message {
     @Override
     public void handle(ChannelHandler.Context context) {
         if (!(context.getSender() instanceof ServerPlayer player)) return;
-        if (!player.isCreative() || !MapAtlasesConfig.creativeTeleport.get()) return;
+        if (!player.isCreative() || !UltimateMapAtlasesServerConfigManager.INSTANCE.creativeTeleport) return;
 
         var server = player.level().getServer();
         if (server == null) return;

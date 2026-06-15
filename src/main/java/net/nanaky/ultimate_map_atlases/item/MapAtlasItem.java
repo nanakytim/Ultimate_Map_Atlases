@@ -26,7 +26,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 import net.nanaky.ultimate_map_atlases.integration.SupplementariesCompat;
 import net.nanaky.ultimate_map_atlases.map_collection.IMapCollection;
 import net.nanaky.ultimate_map_atlases.map_collection.MapCollection;
@@ -77,10 +77,10 @@ public class MapAtlasItem extends Item {
         }
         tooltip.accept(Component.translatable("item.map_atlases.atlas.tooltip_maps", mapSize)
                 .withStyle(ChatFormatting.GRAY));
-        if (MapAtlasesConfig.requireEmptyMapsToExpand.get() &&
-                MapAtlasesConfig.enableEmptyMapEntryAndFill.get()) {
+        if (UltimateMapAtlasesServerConfigManager.INSTANCE.requireEmptyMapsToExpand &&
+                UltimateMapAtlasesServerConfigManager.INSTANCE.enableEmptyMapEntryAndFill) {
             if (mapSize + empties == 0) {
-                empties = MapAtlasesConfig.pityActivationMapCount.get();
+                empties = UltimateMapAtlasesServerConfigManager.INSTANCE.pityActivationMapCount;
             }
             tooltip.accept(Component.translatable("item.map_atlases.atlas.tooltip_empty", empties)
                     .withStyle(ChatFormatting.GRAY));
@@ -243,7 +243,7 @@ public class MapAtlasItem extends Item {
     }
 
     public static int getMaxMapCount() {
-        return MapAtlasesConfig.maxMapCount.get();
+        return UltimateMapAtlasesServerConfigManager.INSTANCE.maxMapCount;
     }
 
     public static int getEmptyMaps(ItemStack atlas) {
@@ -282,7 +282,6 @@ public class MapAtlasItem extends Item {
     @Override
     public void onCraftedBy(ItemStack stack, Player pPlayer) {
         super.onCraftedBy(stack, pPlayer);
-
         Level level = pPlayer.level();
         convertOldAtlas(level, stack);
         validateSelectedSlices(stack, level);

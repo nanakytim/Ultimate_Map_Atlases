@@ -23,7 +23,8 @@ import org.joml.Matrix3x2fStack;
 import net.nanaky.ultimate_map_atlases.client.AbstractAtlasWidget;
 import net.nanaky.ultimate_map_atlases.client.MapAtlasesClient;
 import net.nanaky.ultimate_map_atlases.client.ui.MapAtlasesHUD;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesClientConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 import net.nanaky.ultimate_map_atlases.networking.C2STeleportPacket;
 import net.nanaky.ultimate_map_atlases.networking.MapAtlasesNetworking;
 import net.nanaky.ultimate_map_atlases.utils.MapDataHolder;
@@ -91,8 +92,8 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
 
         this.isHovered = isMouseOver(pMouseX, pMouseY);
 
-        float baseScale = MapAtlasesClientConfig.worldMapDecorationScale.get().floatValue();
-        float baseTextScale = MapAtlasesClientConfig.worldMapDecorationTextScale.get().floatValue();
+        float baseScale = (float) UltimateMapAtlasesClientConfigManager.INSTANCE.worldMapDecorationScale;
+        float baseTextScale = (float) UltimateMapAtlasesClientConfigManager.INSTANCE.worldMapDecorationScale;
         float widgetScale = (float) width / (atlasesCount * AbstractAtlasWidget.MAP_DIMENSION);
         float zoomScale = (float) atlasesCount / zoomLevel;
         float combinedTransform = widgetScale * zoomScale;
@@ -109,10 +110,10 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
             hoveredData = d != null ? d.data : null;
         }
         this.drawAtlas(graphics, x, y, width, height, player, zoomLevel,
-                MapAtlasesClientConfig.worldMapBorder.get(), mapScreen.getSelectedSlice().type(),
+                UltimateMapAtlasesClientConfigManager.INSTANCE.worldMapBorder, mapScreen.getSelectedSlice().type(),
                 0x00F000F0, hoveredData);
 
-        float cursorScale = (float) Math.pow((float) atlasesCount / zoomLevel, 0.6f) * MapAtlasesClientConfig.worldMapDecorationScale.get().floatValue();
+        float cursorScale = (float) Math.pow((float) atlasesCount / zoomLevel, 0.6f) * (float) UltimateMapAtlasesClientConfigManager.INSTANCE.worldMapDecorationScale;
         cursorScale = Mth.clamp(cursorScale, 0.25f, 1.5f);
         drawPlayerCursor(graphics, player, cursorScale);
 
@@ -152,7 +153,7 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
                 graphics.setTooltipForNextFrame(mc.font.split(Component.translatable("chat.coordinates.tooltip")
                         .withStyle(ChatFormatting.GREEN), 200), pMouseX, pMouseY);
             }
-            if (!MapAtlasesClientConfig.drawWorldMapCoords.get()) return;
+            if (!UltimateMapAtlasesClientConfigManager.INSTANCE.drawWorldMapCoords) return;
             if (d != null) {
                 String label = Component.translatable("message.map_atlases.map_name", Component.literal(String.valueOf(d.id))).getString();
                 int textWidth = mc.font.width(label);
@@ -189,7 +190,7 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
     }
 
     private void renderPositionText(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, MapDataHolder hoveredMap) {
-        if (!MapAtlasesClientConfig.drawWorldMapCoords.get()) return;
+        if (!UltimateMapAtlasesClientConfigManager.INSTANCE.drawWorldMapCoords) return;
         if (hoveredMap == null) return;
         ColumnPos pos = getHoveredPos(mouseX, mouseY);
         String coordsToDisplay = Component.translatable("message.map_atlases.coordinates", pos.x(), pos.z()).getString();
@@ -210,7 +211,7 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
             cumulativeMouseY += deltaY;
             double newXCenter;
             double newZCenter;
-            boolean discrete = !MapAtlasesClientConfig.worldMapSmoothPanning.get();
+            boolean discrete = !UltimateMapAtlasesClientConfigManager.INSTANCE.worldMapSmoothPanning;
             if (discrete) {
                 newXCenter = (int) (currentXCenter - (round((int) cumulativeMouseX, PAN_BUCKET) / PAN_BUCKET * mapBlocksSize));
                 newZCenter = (int) (currentZCenter - (round((int) cumulativeMouseY, PAN_BUCKET) / PAN_BUCKET * mapBlocksSize));
@@ -248,9 +249,9 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
         }
 
         float zl;
-        if (MapAtlasesClientConfig.worldMapSmoothZooming.get()) {
+        if (UltimateMapAtlasesClientConfigManager.INSTANCE.worldMapSmoothZooming) {
             float c = (float) (pDelta);
-            double v = -c / 25d * MapAtlasesClientConfig.worldMapZoomScrollSpeed.get();
+            double v = -c / 25d * UltimateMapAtlasesClientConfigManager.INSTANCE.worldMapZoomScrollSpeed;
             if (AtlasOverviewScreen.isShiftDown() || AtlasOverviewScreen.isControlDown()) v *= 3;
             targetZoomLevel = Mth.clamp(targetZoomLevel + targetZoomLevel * (float) v, minZoom, maxZoom);
             zoomLevel = targetZoomLevel - 0.001f;

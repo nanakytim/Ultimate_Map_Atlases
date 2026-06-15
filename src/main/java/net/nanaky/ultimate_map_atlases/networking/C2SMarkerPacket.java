@@ -17,7 +17,8 @@ import net.minecraft.world.level.saveddata.maps.MapDecorationTypes;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import org.jetbrains.annotations.Nullable;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.MoonlightCompat;
 import net.nanaky.ultimate_map_atlases.mixin.MapItemSavedDataAccessor;
 import net.nanaky.ultimate_map_atlases.utils.MapAtlasesAccessUtils;
@@ -70,7 +71,7 @@ public class C2SMarkerPacket implements Message {
 
             double d0 = pos.x() + 0.5D;
             double d1 = pos.z() + 0.5D;
-            String str = MapAtlasesConfig.pinMarkerId.get();
+            String str = UltimateMapAtlasesServerConfigManager.INSTANCE.pinMarkerId;
             if (!str.isEmpty()) {
                 Identifier id = Identifier.parse(str);
 

@@ -12,7 +12,7 @@ import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 import net.nanaky.ultimate_map_atlases.item.MapAtlasItem;
 import net.nanaky.ultimate_map_atlases.mixin.MapItemSavedDataAccessor;
 import net.nanaky.ultimate_map_atlases.networking.MapAtlasesNetworking;
@@ -85,7 +85,7 @@ public class MapAtlasesAccessUtils {
             return atlasFromMainHand;
         }
 
-        var loc = MapAtlasesConfig.activationLocation.get();
+        var loc = UltimateMapAtlasesServerConfigManager.INSTANCE.activationLocation;
 
         if (loc.hasOffhand()) {
             ItemStack atlasFromOffHand = player.getOffhandItem();
@@ -106,7 +106,7 @@ public class MapAtlasesAccessUtils {
     public static int getMapCountToAdd(ItemStack atlas, ItemStack bottomItem, Level level) {
         int amountToAdd = bottomItem.getCount();
         int existingMapCount = MapAtlasItem.getMaps(atlas, level).getCount() + MapAtlasItem.getEmptyMaps(atlas);
-        amountToAdd *= MapAtlasesConfig.mapEntryValueMultiplier.get();
+        amountToAdd *= UltimateMapAtlasesServerConfigManager.INSTANCE.mapEntryValueMultiplier;
         if (MapAtlasItem.getMaxMapCount() != -1
                 && existingMapCount + bottomItem.getCount() > MapAtlasItem.getMaxMapCount()) {
             amountToAdd = MapAtlasItem.getMaxMapCount() - existingMapCount;

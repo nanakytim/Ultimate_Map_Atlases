@@ -18,7 +18,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
 import net.nanaky.ultimate_map_atlases.PlatStuff;
 import net.nanaky.ultimate_map_atlases.client.MapAtlasesClient;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 import net.nanaky.ultimate_map_atlases.item.MapAtlasItem;
 import net.nanaky.ultimate_map_atlases.map_collection.IMapCollection;
 import net.nanaky.ultimate_map_atlases.utils.AtlasCartographyTable;
@@ -101,7 +102,7 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
 
         }
         else if (bottomItem.getItem() == Items.MAP
-                || (MapAtlasesConfig.acceptPaperForEmptyMaps.get() && bottomItem.getItem() == Items.PAPER)) {
+                || (UltimateMapAtlasesServerConfigManager.INSTANCE.acceptPaperForEmptyMaps && bottomItem.getItem() == Items.PAPER)) {
             this.access.execute((world, blockPos) -> {
                 ItemStack result = topItem.copy();
                 int amountToAdd = MapAtlasesAccessUtils.getMapCountToAdd(topItem, bottomItem, world);

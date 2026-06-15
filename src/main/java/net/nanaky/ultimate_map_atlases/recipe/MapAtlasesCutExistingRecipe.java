@@ -16,7 +16,7 @@ import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 import net.nanaky.ultimate_map_atlases.item.MapAtlasItem;
 import net.nanaky.ultimate_map_atlases.map_collection.IMapCollection;
 import net.nanaky.ultimate_map_atlases.utils.MapDataHolder;
@@ -121,7 +121,7 @@ public class MapAtlasesCutExistingRecipe extends CustomRecipe {
                 }
                 int emptyMaps = MapAtlasItem.getEmptyMaps(stack);
                 if (emptyMaps > 0 && !didRemoveFilled) {
-                    int multiplier = MapAtlasesConfig.mapEntryValueMultiplier.get();
+                    int multiplier = UltimateMapAtlasesServerConfigManager.INSTANCE.mapEntryValueMultiplier;
                     int amountToSet = Math.max(emptyMaps - multiplier, 0);
                     MapAtlasItem.setEmptyMaps(stack, amountToSet);
                 }

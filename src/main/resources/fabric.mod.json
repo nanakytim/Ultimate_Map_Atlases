@@ -15,15 +15,9 @@
   "icon": "icon.png",
   "environment": "*",
   "entrypoints": {
-    "main": [
-      "net.nanaky.ultimate_map_atlases.UltimateMapAtlases"
-    ],
-    "client": [
-      "net.nanaky.ultimate_map_atlases.client.UltimateMapAtlasesClient"
-    ],
-    "modmenu": [
-      "net.nanaky.ultimate_map_atlases.config.ModMenuIntegration"
-    ]
+    "main": ["net.nanaky.ultimate_map_atlases.UltimateMapAtlases"],
+    "client": ["net.nanaky.ultimate_map_atlases.client.UltimateMapAtlasesClient"],
+    "modmenu": ["net.nanaky.ultimate_map_atlases.config.ModMenuIntegration"]
   },
   "mixins": [
     "ultimate_map_atlases.mixins.json"
@@ -31,5 +25,9 @@
   "depends": {
     "fabricloader": "*",
     "minecraft": ">=${minecraft_min_version} <${minecraft_max_version}"
-  }
+  },
+  "suggests": {
+		"modmenu": "*",
+		"cloth-config": "*"
+	}
 }

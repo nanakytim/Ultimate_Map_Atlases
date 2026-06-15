@@ -5,7 +5,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesClientConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
 
 public class SliceArrowButton extends BookmarkButton {
 
@@ -56,6 +56,6 @@ public class SliceArrowButton extends BookmarkButton {
     public void playDownSound(SoundManager pHandler) {
         super.playDownSound(pHandler);
         pHandler.play(SimpleSoundInstance.forUI( MapAtlasesMod.ATLAS_PAGE_TURN_SOUND_EVENT.get(), 1.0F,
-                (float)(double)   MapAtlasesClientConfig.soundScalar.get()));
+                (float)(double)   UltimateMapAtlasesClientConfigManager.INSTANCE.soundScalar));
     }
 }

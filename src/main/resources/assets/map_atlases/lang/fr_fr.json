@@ -40,5 +40,5 @@
   "message.map_atlases.coordinates_full": "%d, %d, %d",
   "message.map_atlases.worldmap_coords": "X: %d, Z: %d",
   "message.map_atlases.chunk_coordinates": "%d, %d [%d, %d]",
-  "tag.item.map_atlases.sticky_crafting_items": "Ingrédient de l'Atlas collant"
+  "tag.item.map_atlases.sticky_crafting_items": "Ingrédient collant pour l'Atlas"
 }

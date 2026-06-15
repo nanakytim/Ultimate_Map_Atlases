@@ -20,8 +20,8 @@ import org.joml.Matrix3x2fStack;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
 import net.nanaky.ultimate_map_atlases.PlatStuff;
 import net.nanaky.ultimate_map_atlases.client.AbstractAtlasWidget;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesClientConfig;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 import net.nanaky.ultimate_map_atlases.utils.MapDataHolder;
 
 import java.util.HashSet;
@@ -50,7 +50,7 @@ public class EntityRadar {
         Set<TrackedEntityMarker> markers = nearbyEntityMarkers.computeIfAbsent(level, ignored -> new HashSet<>());
         markers.clear();
 
-        int radius = MapAtlasesClientConfig.radarRadius.get();
+        int radius = UltimateMapAtlasesClientConfigManager.INSTANCE.radarRadius;
         for (LivingEntity entity : level.getEntitiesOfClass(
                 LivingEntity.class,
                 new AABB(player.blockPosition()).inflate(radius, 30, radius).move(0, 2, 0))) {
@@ -65,7 +65,7 @@ public class EntityRadar {
     }
 
     public static void renderMapMarkers(GuiGraphicsExtractor graphics, MapDataHolder holder, Player player) {
-        if (!MapAtlasesConfig.entityRadar.get() || !MapAtlasesClientConfig.entityRadar.get()) {
+        if (!UltimateMapAtlasesClientConfigManager.INSTANCE.entityRadar || !UltimateMapAtlasesClientConfigManager.INSTANCE.entityRadar) {
             return;
         }
         ClientLevel level = Minecraft.getInstance().level;
@@ -90,7 +90,7 @@ public class EntityRadar {
 
             float renderX = AbstractAtlasWidget.MAP_DIMENSION / 2f + mapOffsetX;
             float renderY = AbstractAtlasWidget.MAP_DIMENSION / 2f + mapOffsetY;
-            float rotationDegrees = MapAtlasesClientConfig.radarRotation.get() ? entity.getYRot() + 180.0F : 0.0F;
+            float rotationDegrees = UltimateMapAtlasesClientConfigManager.INSTANCE.radarRotation ? entity.getYRot() + 180.0F : 0.0F;
             int alpha = getAlpha(entity, player);
             if (alpha <= 0) {
                 continue;
@@ -136,7 +136,7 @@ public class EntityRadar {
     }
 
     private static Identifier getTexture(MarkerKind kind) {
-        if (MapAtlasesClientConfig.radarColor.get()) {
+        if (UltimateMapAtlasesClientConfigManager.INSTANCE.radarColor) {
             return ClientMarkers.getPinTexture(YELLOW_PIN_INDEX, false);
         }
         return switch (kind) {

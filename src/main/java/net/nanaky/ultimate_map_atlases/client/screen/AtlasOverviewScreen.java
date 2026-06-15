@@ -29,8 +29,10 @@ import org.joml.Vector4d;
 import org.lwjgl.glfw.GLFW;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
 import net.nanaky.ultimate_map_atlases.client.MapAtlasesClient;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesClientConfig;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.ClientMarkers;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.MoonlightCompat;
 import net.nanaky.ultimate_map_atlases.item.MapAtlasItem;
@@ -48,7 +50,7 @@ import static net.nanaky.ultimate_map_atlases.client.MapAtlasesClient.*;
 
 public class AtlasOverviewScreen extends Screen {
 
-    private final boolean bigTexture = MapAtlasesClientConfig.worldMapBigTexture.get();
+    private final boolean bigTexture = UltimateMapAtlasesClientConfigManager.INSTANCE.worldMapBigTexture;
     private final Identifier texture = bigTexture ? ATLAS_BACKGROUND_TEXTURE_BIG : ATLAS_BACKGROUND_TEXTURE;
 
     private final int BOOK_WIDTH = bigTexture ? 290 : 162;
@@ -97,8 +99,8 @@ public class AtlasOverviewScreen extends Screen {
         this.player = Objects.requireNonNull(Minecraft.getInstance().player);
         this.lectern = lectern;
         this.globalScale = lectern == null ?
-                (float) (double) MapAtlasesClientConfig.worldMapScale.get() :
-                (float) (double) MapAtlasesClientConfig.lecternWorldMapScale.get();
+                (float) (double) UltimateMapAtlasesClientConfigManager.INSTANCE.worldMapScale :
+                (float) (double) UltimateMapAtlasesClientConfigManager.INSTANCE.lecternWorldMapScale;
 
         this.currentMaps = MapAtlasItem.getMaps(atlas, level);
         MapDataHolder closest = getMapClosestToPlayer();
@@ -108,7 +110,7 @@ public class AtlasOverviewScreen extends Screen {
         this.cursorAction = placingPin ? CursorAction.PLACING_PIN : CursorAction.NONE;
         if (!isPinOnly) {
             this.player.playSound(MapAtlasesMod.ATLAS_OPEN_SOUND_EVENT.get(),
-                    (float) (double) MapAtlasesClientConfig.soundScalar.get(), 1.0F);
+                    (float) (double) UltimateMapAtlasesClientConfigManager.INSTANCE.soundScalar, 1.0F);
         } else {
             partialPin = Pair.of(closest, new ColumnPos(player.blockPosition().getX(), player.blockPosition().getZ()));
         }
@@ -181,13 +183,13 @@ public class AtlasOverviewScreen extends Screen {
         this.setFocused(mapWidget);
 
         int by = 0;
-        if (!MapAtlasesConfig.pinMarkerId.get().isEmpty() && MapAtlasesClientConfig.moonlightCompat.get()) {
+        if (!UltimateMapAtlasesServerConfigManager.INSTANCE.pinMarkerId.isEmpty() && UltimateMapAtlasesClientConfigManager.INSTANCE.moonlightCompat) {
             this.pinButton = new PinButton((width + BOOK_WIDTH) / 2 + 20,
                     (height - BOOK_HEIGHT) / 2 + 16, this);
             this.addRenderableWidget(pinButton);
             by += 20;
         }
-        if (MapAtlasesConfig.shearButton.get()) {
+        if (UltimateMapAtlasesServerConfigManager.INSTANCE.shearButton) {
             ShearButton shearButton = new ShearButton((width + BOOK_WIDTH) / 2 + 20,
                     (height - BOOK_HEIGHT) / 2 + 16 + by, this);
             this.addRenderableWidget(shearButton);
@@ -380,7 +382,7 @@ public class AtlasOverviewScreen extends Screen {
 
         if (editBox.active) editBox.extractWidgetRenderState(graphics, mouseX, mouseY, delta);
 
-        else if (MapAtlasesClientConfig.worldMapCrossair.get()) {
+        else if (UltimateMapAtlasesClientConfigManager.INSTANCE.worldMapCrossair) {
             poseStack.pushMatrix();
             graphics.nextStratum();
             graphics.blit(RenderPipelines.GUI_TEXTURED, GUI_ICONS_TEXTURE, (width - 15) / 2, (height - 15) / 2,
@@ -524,7 +526,7 @@ public class AtlasOverviewScreen extends Screen {
             centerZ = center.centerZ;
         }
 
-        boolean followPlayer = isWherePlayerIs && MapAtlasesClientConfig.worldMapFollowPlayer.get();
+        boolean followPlayer = isWherePlayerIs && UltimateMapAtlasesClientConfigManager.INSTANCE.worldMapFollowPlayer;
         this.mapWidget.resetAndCenter(centerX, centerZ, followPlayer, changedDim, true);
         for (var v : dimensionBookmarks) {
             v.setSelected(v.getDimension().equals(dimension));
@@ -532,18 +534,19 @@ public class AtlasOverviewScreen extends Screen {
         recalculateDecorationWidgets();
     }
 
-    private static final LinkedHashSet<String> priorityIds = new LinkedHashSet<>();
-
     public void togglePriority(String priorityKey) {
-        if (!priorityIds.remove(priorityKey)) {
-            priorityIds.add(priorityKey);
+        LinkedHashSet<String> ids = new LinkedHashSet<>(ClientMarkers.getLoadedPriorityIds());
+        if (!ids.remove(priorityKey)) {
+            ids.add(priorityKey);
         }
+        ClientMarkers.setPriorityIds(ids);
         recalculateDecorationWidgets();
     }
 
     public boolean isPriority(String priorityKey) {
-        return priorityIds.contains(priorityKey);
+        return ClientMarkers.getLoadedPriorityIds().contains(priorityKey);
     }
+
 
     protected void recalculateDecorationWidgets() {
         for (var v : decorationBookmarks) {
@@ -580,14 +583,14 @@ public class AtlasOverviewScreen extends Screen {
         List<DecorationBookmarkButton> priorityWidgets = new ArrayList<>();
         List<DecorationBookmarkButton> normalWidgets = new ArrayList<>();
 
-        for (String pid : priorityIds) {
+        for (String pid : ClientMarkers.getLoadedPriorityIds()) {
             allWidgets.stream()
                     .filter(w -> w.getPriorityKey().equals(pid))
                     .findFirst()
                     .ifPresent(priorityWidgets::add);
         }
         for (var w : allWidgets) {
-            if (!priorityIds.contains(w.getPriorityKey())) {
+            if (!ClientMarkers.getLoadedPriorityIds().contains(w.getPriorityKey())) {
                 normalWidgets.add(w);
             }
         }
@@ -638,7 +641,7 @@ public class AtlasOverviewScreen extends Screen {
             List<DecorationBookmarkButton> priorityOrdered = new ArrayList<>();
             List<DecorationBookmarkButton> normalOrdered = new ArrayList<>();
 
-            for (String pid : priorityIds) {
+            for (String pid : ClientMarkers.getLoadedPriorityIds()) {
                 byDistance.stream()
                         .map(Pair::getSecond)
                         .filter(w -> w.getPriorityKey().equals(pid))
@@ -647,7 +650,7 @@ public class AtlasOverviewScreen extends Screen {
             }
             for (var e : byDistance) {
                 var w = e.getSecond();
-                if (!priorityIds.contains(w.getPriorityKey())) {
+                if (!ClientMarkers.getLoadedPriorityIds().contains(w.getPriorityKey())) {
                     normalOrdered.add(w);
                 }
             }
@@ -794,7 +797,7 @@ public class AtlasOverviewScreen extends Screen {
 
 
     public boolean canTeleport() {
-        return MapAtlasesConfig.creativeTeleport.get()
+        return UltimateMapAtlasesServerConfigManager.INSTANCE.creativeTeleport
                 && isShiftDown()
                 && minecraft.gameMode.getPlayerMode().isCreative() &&
                 cursorAction == CursorAction.NONE && !editBox.active;

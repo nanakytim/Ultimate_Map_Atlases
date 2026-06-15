@@ -13,7 +13,7 @@ import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
 import net.nanaky.ultimate_map_atlases.client.CompoundTooltip;
 import net.nanaky.ultimate_map_atlases.client.MapAtlasesClient;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesClientConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.ClientMarkers;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.CustomDecorationButton;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.MoonlightCompat;
@@ -162,7 +162,7 @@ public abstract class DecorationBookmarkButton extends BookmarkButton {
             }
         }
         Component mapIconComponent = getDecorationName();
-        if (!MapAtlasesClientConfig.drawPinMapCoords.get()) {
+        if (!UltimateMapAtlasesClientConfigManager.INSTANCE.drawPinMapCoords) {
             return Tooltip.create(mapIconComponent);
         }
         Component coordsComponent = Component.literal("X: " + (int) getWorldX() + ", Z: " + (int) getWorldZ())

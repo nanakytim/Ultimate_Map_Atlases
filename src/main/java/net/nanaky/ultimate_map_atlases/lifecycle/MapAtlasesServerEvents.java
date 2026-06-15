@@ -14,7 +14,7 @@ import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2i;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 import net.nanaky.ultimate_map_atlases.integration.SupplementariesCompat;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.EntityRadar;
 import net.nanaky.ultimate_map_atlases.item.MapAtlasItem;
@@ -139,11 +139,11 @@ public class MapAtlasesServerEvents {
         if (activeInfo != null && !nearbyExistentMaps.contains(activeInfo)) nearbyExistentMaps.add(activeInfo);
         if (!nearbyExistentMaps.isEmpty()) {
             MapDataHolder selected;
-            if (MapAtlasesConfig.roundRobinUpdate.get()) {
+            if (UltimateMapAtlasesServerConfigManager.INSTANCE.roundRobinUpdate) {
                 selected = nearbyExistentMaps.get(server.getTickCount() % nearbyExistentMaps.size());
                 selected.updateMap(player);
             } else {
-                for (int j = 0; j < MapAtlasesConfig.mapUpdatePerTick.get(); j++) {
+                for (int j = 0; j < UltimateMapAtlasesServerConfigManager.INSTANCE.mapUpdatePerTick; j++) {
                     selected = getMapToUpdate(nearbyExistentMaps, player);
                     if (selected != null) selected.updateMap(player);
                 }
@@ -160,7 +160,7 @@ public class MapAtlasesServerEvents {
         }
         lastMapData.put(player, activeInfo);
 
-        if (!MapAtlasesConfig.enableEmptyMapEntryAndFill.get() ||
+        if (!UltimateMapAtlasesServerConfigManager.INSTANCE.enableEmptyMapEntryAndFill ||
                 MapAtlasItem.isLocked(atlas)) return;
 
         if (isPlayerTooFarAway(activeKey, player, scaleWidth)) {
@@ -267,11 +267,11 @@ public class MapAtlasesServerEvents {
     ) {
         Level level = player.level();
         if (ItemStackData.getTag(atlas) == null) {
-            MapAtlasItem.setEmptyMaps(atlas, MapAtlasesConfig.pityActivationMapCount.get());
+            MapAtlasItem.setEmptyMaps(atlas, UltimateMapAtlasesServerConfigManager.INSTANCE.pityActivationMapCount);
         }
 
         int emptyCount = MapAtlasItem.getEmptyMaps(atlas);
-        boolean bypassEmptyMaps = !MapAtlasesConfig.requireEmptyMapsToExpand.get();
+        boolean bypassEmptyMaps = !UltimateMapAtlasesServerConfigManager.INSTANCE.requireEmptyMapsToExpand;
         boolean addedMap = false;
         boolean atlasChanged = false;
         if (!mutex.isLocked() && (emptyCount > 0 || player.isCreative() || bypassEmptyMaps)) {

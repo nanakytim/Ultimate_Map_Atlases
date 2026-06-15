@@ -11,7 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesClientConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.ClientMarkersRenderer;
 
 import java.util.Random;
@@ -53,7 +53,7 @@ public class PinNameBox extends EditBox {
 
         this.markerHovered = mouseX >= (double) this.getX() - height - 1 && mouseY >= this.getY() &&
                 mouseX < this.getX() && mouseY < (this.getY() + this.height);
-        if (MapAtlasesClientConfig.moonlightCompat.get()) {
+        if (UltimateMapAtlasesClientConfigManager.INSTANCE.moonlightCompat) {
             float popIn = Mth.lerp(partialTicks, scrollPopInAnimationO, scrollPopInAnimation) * 3;
             float displayInd = Mth.lerp(partialTicks, displayIndexO, displayIndex);
             float remainder = displayInd % 1;

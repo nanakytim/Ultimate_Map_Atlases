@@ -1,0 +1,33 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_book": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [{ "items": "minecraft:book" }]
+      }
+    },
+    "has_sticky": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [{ "items": "#map_atlases:sticky_crafting_items" }]
+      }
+    },
+    "has_map": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [{ "items": "minecraft:map" }]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "map_atlases:craft_atlas"
+      }
+    }
+  },
+  "requirements": [["has_the_recipe", "has_book", "has_sticky", "has_map"]],
+  "rewards": {
+    "recipes": ["map_atlases:craft_atlas"]
+  }
+}

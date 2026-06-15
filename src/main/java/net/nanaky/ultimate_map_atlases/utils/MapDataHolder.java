@@ -17,7 +17,9 @@ import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.MoonlightCompat;
 import net.nanaky.ultimate_map_atlases.map_collection.MapKey;
 import net.nanaky.ultimate_map_atlases.mixin.MapItemSavedDataAccessor;
@@ -82,13 +84,13 @@ public class MapDataHolder {
         } else {
             ((MapItem) type.filled).update(player.level(), player, data);
         }
-        if (MapAtlasesConfig.debugUpdate.get()) {
+        if (UltimateMapAtlasesServerConfigManager.INSTANCE.debugUpdate) {
             MapAtlasesNetworking.CHANNEL.sendToClientPlayer(player, new S2CDebugUpdateMapPacket(stringId));
         }
     }
 
     private static boolean canMultiThread(Level level) {
-        MapAtlasesConfig.UpdateType updateType = MapAtlasesConfig.mapUpdateMultithreaded.get();
+        UltimateMapAtlasesServerConfig.UpdateType updateType = UltimateMapAtlasesServerConfigManager.INSTANCE.mapUpdateMultithreaded;
         return switch (updateType) {
             case OFF -> false;
             case ALWAYS_ON -> true;
@@ -98,7 +100,7 @@ public class MapDataHolder {
 
     private void updateMarkers(Player player, int maxRange) {
         int step = data.getHoldingPlayer(player).step;
-        int frenquency = MapAtlasesConfig.markersUpdatePeriod.get();
+        int frenquency = UltimateMapAtlasesServerConfigManager.INSTANCE.markersUpdatePeriod;
         if (step % frenquency == 0) {
             MapItemSavedDataAccessor accessor = (MapItemSavedDataAccessor) data;
             Level level = player.level();

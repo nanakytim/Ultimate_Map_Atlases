@@ -15,7 +15,8 @@ import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.nanaky.moonlight.api.platform.PlatHelper;
 import org.jetbrains.annotations.ApiStatus;
 import net.nanaky.ultimate_map_atlases.client.MapAtlasesClient;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 import net.nanaky.ultimate_map_atlases.mixin.MapItemSavedDataAccessor;
 import net.nanaky.ultimate_map_atlases.networking.C2SToggleBlockMarkerPacket;
 import net.nanaky.ultimate_map_atlases.utils.MapAtlasesAccessUtils;
@@ -28,8 +29,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,12 +50,14 @@ public class ClientMarkers {
             "pin_purple"
     );
     private static final Set<String> FOCUSED_PINS = new HashSet<>();
+    private static final Set<String> PRIORITY_IDS = new LinkedHashSet<>();
     private static final Map<Integer, Map<String, PinData>> PINS_BY_MAP = new HashMap<>();
     private static final Map<Integer, Map<String, BlockMarkerData>> BLOCK_MARKERS_BY_MAP = new HashMap<>();
     private static String lastFolderNameOrIP = null;
     private static SaveTarget lastType = SaveTarget.SINGLEPLAYER;
     private static Path currentPath = null;
     private static Path currentBlockMarkersPath = null;
+    private static Path currentPriorityPath = null;
     private static volatile boolean blockMarkersDirty = false;
 
     @ApiStatus.Internal
@@ -73,9 +79,11 @@ public class ClientMarkers {
     public static synchronized void loadClientMarkers(long seed, String levelName) {
         PINS_BY_MAP.clear();
         BLOCK_MARKERS_BY_MAP.clear();
+        PRIORITY_IDS.clear();
         String id = lastFolderNameOrIP == null ? levelName : lastFolderNameOrIP;
         currentPath = getFilePath(id, lastType);
         currentBlockMarkersPath = getBlockMarkersFilePath(id, lastType);
+        currentPriorityPath = getPriorityFilePath(id, lastType);
 
         if (Files.exists(currentPath)) {
             try {
@@ -101,6 +109,14 @@ public class ClientMarkers {
                 }
             } catch (Exception ignored) {
                 BLOCK_MARKERS_BY_MAP.clear();
+            }
+        }
+
+        if (Files.exists(currentPriorityPath)) {
+            try {
+                PRIORITY_IDS.addAll(Files.readAllLines(currentPriorityPath, StandardCharsets.UTF_8));
+            } catch (Exception ignored) {
+                PRIORITY_IDS.clear();
             }
         }
 
@@ -134,14 +150,26 @@ public class ClientMarkers {
         }
     }
 
+    public static void savePriorityIds() {
+        Path path = currentPriorityPath;
+        if (path == null) return;
+        try {
+            Files.createDirectories(path.getParent());
+            Files.write(path, new ArrayList<>(PRIORITY_IDS), StandardCharsets.UTF_8);
+        } catch (Exception ignored) {}
+    }
+
     public static synchronized void unloadWorld() {
         saveClientMarkers();
         saveBlockMarkers();
+        savePriorityIds();
         FOCUSED_PINS.clear();
         PINS_BY_MAP.clear();
         BLOCK_MARKERS_BY_MAP.clear();
+        PRIORITY_IDS.clear(); 
         currentPath = null;
         currentBlockMarkersPath = null;
+        currentPriorityPath = null;
     }
 
     public static Set<?> send(Integer integer, MapItemSavedData data) {
@@ -156,7 +184,7 @@ public class ClientMarkers {
 
 
     public static synchronized void addPin(MapDataHolder holder, ColumnPos pos, String text, int index) {
-        String markerId = MapAtlasesConfig.pinMarkerId.get();
+        String markerId = UltimateMapAtlasesServerConfigManager.INSTANCE.pinMarkerId;
         if (markerId.isEmpty()) return;
         BlockPos blockPos = new BlockPos(pos.x(), 0, pos.z());
         Component name = text.isEmpty() ? null : Component.literal(text);
@@ -229,6 +257,21 @@ public class ClientMarkers {
         BlockMarkerData marker = markers.get(decorationKey);
         if (marker == null) return null;
         return marker.customName();
+    }
+
+    public static Set<String> getLoadedPriorityIds() {
+        return Collections.unmodifiableSet(PRIORITY_IDS);
+    }
+
+    public static void setPriorityIds(Collection<String> ids) {
+        PRIORITY_IDS.clear();
+        PRIORITY_IDS.addAll(ids);
+        savePriorityIds();
+    }
+
+    private static Path getPriorityFilePath(String id, SaveTarget type) {
+        String fileName = (type == SaveTarget.SINGLEPLAYER ? id : sanitiseServerName(id));
+        return PlatHelper.getGamePath().resolve("map_atlases/" + type.getSerializedName() + "/" + fileName + ".priorities");
     }
 
     private static String blockMarkerTranslationKey(String decorationTypeKey) {

@@ -15,7 +15,7 @@ import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 import net.nanaky.ultimate_map_atlases.item.MapAtlasItem;
 import net.nanaky.ultimate_map_atlases.map_collection.IMapCollection;
 import net.nanaky.ultimate_map_atlases.utils.MapAtlasesAccessUtils;
@@ -90,10 +90,10 @@ public class MapAtlasesAddRecipe extends CustomRecipe {
     private boolean isEmptyMap(ItemStack itemstack) {
         if (itemstack.isEmpty()) return false;
         if (MapAtlasesAccessUtils.isValidEmptyMap(itemstack)) {
-            return MapAtlasesConfig.enableEmptyMapEntryAndFill.get();
+            return UltimateMapAtlasesServerConfigManager.INSTANCE.enableEmptyMapEntryAndFill;
         }
         if (itemstack.is(Items.PAPER)) {
-            return MapAtlasesConfig.acceptPaperForEmptyMaps.get();
+            return UltimateMapAtlasesServerConfigManager.INSTANCE.acceptPaperForEmptyMaps;
         }
         return false;
     }
@@ -117,7 +117,7 @@ public class MapAtlasesAddRecipe extends CustomRecipe {
             }
         }
 
-        emptyMapCount *= MapAtlasesConfig.mapEntryValueMultiplier.get();
+        emptyMapCount *= UltimateMapAtlasesServerConfigManager.INSTANCE.mapEntryValueMultiplier;
         IMapCollection maps = MapAtlasItem.getMaps(atlas, level);
         for (var i : mapIds) {
             maps.add(i, level);

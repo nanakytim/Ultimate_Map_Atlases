@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
 import net.nanaky.ultimate_map_atlases.PlatStuff;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 import net.nanaky.ultimate_map_atlases.utils.AtlasCartographyTable;
 import net.nanaky.ultimate_map_atlases.utils.MapAtlasesAccessUtils;
 
@@ -65,7 +65,7 @@ class MixinCartographyTableAbstractContainerMenuSecondSlotMaps {
                 menu.mapatlases$setSelectedMapIndex(0);
             } else if (
                     (slotOneItem.is(Items.MAP)
-                            || (MapAtlasesConfig.acceptPaperForEmptyMaps.get() && slotOneItem.is(Items.PAPER)))) {
+                            || (UltimateMapAtlasesServerConfigManager.INSTANCE.acceptPaperForEmptyMaps && slotOneItem.is(Items.PAPER)))) {
                 int amountToTake = MapAtlasesAccessUtils.getMapCountToAdd(atlas, slotOneItem, player.level());
                 slotOne.remove(amountToTake - 1);
             } else if (MapAtlasesAccessUtils.isValidFilledMap(slotOneItem)) {

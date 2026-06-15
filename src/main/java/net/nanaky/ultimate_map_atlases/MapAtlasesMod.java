@@ -20,8 +20,8 @@ import net.minecraft.world.level.saveddata.maps.MapDecorationType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import net.nanaky.ultimate_map_atlases.client.MapAtlasesClient;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesClientConfig;
-import net.nanaky.ultimate_map_atlases.config.MapAtlasesConfig;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
+import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 import net.nanaky.ultimate_map_atlases.integration.SupplementariesCompat;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.MoonlightCompat;
 import net.nanaky.ultimate_map_atlases.item.MapAtlasItem;
@@ -84,9 +84,9 @@ public class MapAtlasesMod {
     public static void init() {
         MapAtlasesNetworking.init();
         MapAtlasLockIcon.register();
-        MapAtlasesConfig.init();
-        if (PlatHelper.getPhysicalSide().isClient()) {
-            MapAtlasesClientConfig.init();
+            UltimateMapAtlasesServerConfigManager.load();
+            if (PlatHelper.getPhysicalSide().isClient()) {
+                UltimateMapAtlasesClientConfigManager.load();
             MapAtlasesClient.init();
         }
         RegHelper.addItemsToTabsRegistration(MapAtlasesMod::addItemsToTabs);
