@@ -257,7 +257,7 @@ public class AtlasOverviewScreen extends Screen {
             recalculateDecorationWidgets();
         }
 
-        if (!isValid()) this.minecraft.setScreen(null);
+        if (!isValid()) this.minecraft.gui.setScreen(null);
         if (false && lectern != null && selectedSlice.dimension().equals(lectern.getLevel().dimension())) {
             var data = currentMaps.getClosest(
                     lectern.getBlockPos().getX(), lectern.getBlockPos().getZ(),

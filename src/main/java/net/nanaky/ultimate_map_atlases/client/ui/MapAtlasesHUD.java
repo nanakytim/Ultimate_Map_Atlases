@@ -122,7 +122,7 @@ public class MapAtlasesHUD extends AbstractAtlasWidget implements HudElement {
         if (!UltimateMapAtlasesClientConfigManager.INSTANCE.drawMiniMapHUD) {
             return;
         }
-        if (UltimateMapAtlasesClientConfigManager.INSTANCE.hideWhenInventoryOpen && mc.screen != null) {
+        if (UltimateMapAtlasesClientConfigManager.INSTANCE.hideWhenInventoryOpen && mc.gui.screen() != null) {
             return;
         }
 
@@ -160,7 +160,7 @@ public class MapAtlasesHUD extends AbstractAtlasWidget implements HudElement {
 
         if (!Objects.equals(lastMapKey, currentMapKey)) {
             lastMapKey = currentMapKey;
-            if (mc.screen == null && UltimateMapAtlasesClientConfigManager.INSTANCE.mapChangeSound) {
+            if (mc.gui.screen() == null && UltimateMapAtlasesClientConfigManager.INSTANCE.mapChangeSound) {
                 mc.player.playSound(MapAtlasesMod.ATLAS_PAGE_TURN_SOUND_EVENT.get(),
                         (float) (double) UltimateMapAtlasesClientConfigManager.INSTANCE.soundScalar, 1.0F);
             }

@@ -252,7 +252,7 @@ public class MapAtlasesClient {
         int persistedIds = maps.getAllIds().length;
         int resolvedMaps = maps.getAll().size();
         if (persistedIds > 0 && resolvedMaps == persistedIds) {
-            minecraft.setScreen(new AtlasOverviewScreen(atlas, lectern, pinOnly));
+            minecraft.gui.setScreen(new AtlasOverviewScreen(atlas, lectern, pinOnly));
             pendingOpenScreen = null;
         } else if (persistedIds > 0) {
             pendingOpenScreen = new PendingOpenScreen(source, hand, lecternPos, pinOnly);

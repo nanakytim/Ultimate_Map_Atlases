@@ -1,11 +1,11 @@
 package net.nanaky.ultimate_map_atlases.lifecycle;
 
+import com.mojang.datafixers.util.Pair;
 import net.nanaky.moonlight.api.platform.PlatHelper;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
-import net.minecraft.util.Tuple;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.MapItem;
@@ -31,7 +31,7 @@ public class MapAtlasesServerEvents {
 
     private static final ReentrantLock mutex = new ReentrantLock();
 
-    private static final WeakHashMap<Player, Tuple<Float, HashMap<String, MapUpdateTicket>>> updateQueue = new WeakHashMap<>();
+    private static final WeakHashMap<Player, Pair<Float, HashMap<String, MapUpdateTicket>>> updateQueue = new WeakHashMap<>();
     private static final WeakHashMap<Player, MapDataHolder> lastMapData = new WeakHashMap<>();
 
     private static class MapUpdateTicket {
@@ -210,8 +210,8 @@ public class MapAtlasesServerEvents {
 
     @Nullable
     private static MapDataHolder getMapToUpdate(List<MapDataHolder> nearbyExistentMaps, ServerPlayer player) {
-        var tup = updateQueue.computeIfAbsent(player, a -> new Tuple<>(0f, new HashMap<>()));
-        var mapsToUpdate = tup.getB();
+        var tup = updateQueue.computeIfAbsent(player, a -> new Pair<>(0f, new HashMap<>()));
+        var mapsToUpdate = tup.getSecond();
         Set<String> nearbyIds = new HashSet<>();
         for (var holder : nearbyExistentMaps) {
             nearbyIds.add(holder.stringId);
@@ -232,13 +232,13 @@ public class MapAtlasesServerEvents {
             }
         }
         float callsPerTick = totalWeight / (nearbyExistentMaps.size());
-        float counter = tup.getA() + callsPerTick;
+        float counter = tup.getFirst() + callsPerTick;
         boolean shouldUpdate = false;
         if (counter >= 1) {
             shouldUpdate = true;
             counter -= 1;
         }
-        tup.setA(counter);
+        updateQueue.put(player, Pair.of(counter, mapsToUpdate));
 
         if (shouldUpdate) {
             MapUpdateTicket selected = mapsToUpdate.values().stream().max(MapUpdateTicket.COMPARATOR).orElseThrow();

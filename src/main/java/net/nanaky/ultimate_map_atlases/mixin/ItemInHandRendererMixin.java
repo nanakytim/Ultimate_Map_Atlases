@@ -25,7 +25,7 @@ public abstract class ItemInHandRendererMixin {
     @Unique
     private boolean mapatlases$renderingAtlas = false;
 
-    @ModifyExpressionValue(method = "renderArmWithItem", at =  @At(value = "INVOKE",
+    @ModifyExpressionValue(method = "submitArmWithItem", at =  @At(value = "INVOKE",
             ordinal = 0,
             target = "Lnet/minecraft/world/item/ItemStack;has(Lnet/minecraft/core/component/DataComponentType;)Z"))
     public boolean renderMapAtlasItem(boolean isNormalMap, @Local ItemStack pStack){

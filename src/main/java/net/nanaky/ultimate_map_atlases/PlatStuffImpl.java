@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.NonNullList;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -19,7 +20,7 @@ public class PlatStuffImpl {
     }
 
     public static boolean isBoss(EntityType<?> type) {
-        return type == EntityType.WARDEN || type == EntityType.ENDER_DRAGON || type ==EntityType.ELDER_GUARDIAN || type == EntityType.WITHER;
+        return type == EntityTypes.WARDEN || type == EntityTypes.ENDER_DRAGON || type ==EntityTypes.ELDER_GUARDIAN || type == EntityTypes.WITHER;
     }
 
     public static void drawString(GuiGraphicsExtractor g, Font font, String text, float x, float y, int i, boolean b) {

@@ -43,7 +43,7 @@ public class AtlasInHandRenderer {
 
     public static void render(PoseStack pPoseStack, SubmitNodeCollector submitNodeCollector, int pCombinedLight,
                               ItemStack pStack, Minecraft mc) {
-        if (mc.screen instanceof AtlasOverviewScreen) return;
+        if (mc.gui.screen() instanceof AtlasOverviewScreen) return;
 
         MapDataHolder state = MapAtlasesClient.getActiveMap();
         if (state != null) {

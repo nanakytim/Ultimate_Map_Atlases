@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.NeutralMob;
 import net.minecraft.world.entity.animal.Animal;
@@ -117,7 +118,7 @@ public class EntityRadar {
     @Nullable
     private static MarkerKind getMarkerKind(LivingEntity entity) {
         EntityType<?> type = entity.getType();
-        if (type == EntityType.PLAYER) {
+        if (type == EntityTypes.PLAYER) {
             return null;
         }
         if (PlatStuff.isBoss(type)) {

@@ -36,7 +36,7 @@ public class MapAtlasesClientEvents {
         if (MapAtlasesMod.SUPPLEMENTARIES && (gameTime + 27) % 40 == 0) {
             SupplementariesClientCompat.onClientTick(level);
         }
-        else if (client.screen == null && (gameTime + 5) % 40 == 0 && UltimateMapAtlasesClientConfigManager.INSTANCE.automaticSlice) {
+        else if (client.gui.screen() == null && (gameTime + 5) % 40 == 0 && UltimateMapAtlasesClientConfigManager.INSTANCE.automaticSlice) {
             ItemStack atlas = MapAtlasesClient.getCurrentActiveAtlas();
             if (!atlas.isEmpty()) {
                 IMapCollection maps = MapAtlasItem.getMaps(atlas, level);
@@ -58,7 +58,7 @@ public class MapAtlasesClientEvents {
 
     public static void onKeyPressed(KeyMapping keyMapping) {
         Minecraft client = Minecraft.getInstance();
-        if (client.screen != null) return;
+        if (client.gui.screen() != null) return;
 
         if (keyMapping == MapAtlasesClient.OPEN_ATLAS_KEYBIND) {
             if (client.level == null || client.player == null) return;
