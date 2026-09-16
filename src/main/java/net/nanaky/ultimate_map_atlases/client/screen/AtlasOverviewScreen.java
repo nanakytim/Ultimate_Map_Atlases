@@ -26,7 +26,6 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3x2fStack;
 import org.joml.Matrix4d;
 import org.joml.Vector4d;
-import org.lwjgl.glfw.GLFW;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
 import net.nanaky.ultimate_map_atlases.client.MapAtlasesClient;
 import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfig;
@@ -267,7 +266,7 @@ public class AtlasOverviewScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyEvent event) {
-        if (event.key() == GLFW.GLFW_KEY_ESCAPE && editBox.active) {
+        if (event.key() == InputConstants.KEY_ESCAPE && editBox.active) {
             editBox.active = false;
             editBox.visible = false;
             partialPin = null;
@@ -804,21 +803,16 @@ public class AtlasOverviewScreen extends Screen {
     }
 
     public static boolean isShiftDown() {
-        var window = Minecraft.getInstance().getWindow();
-        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT)
-                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
+        return InputConstants.isKeyDown(InputConstants.KEY_LSHIFT)
+                || InputConstants.isKeyDown(InputConstants.KEY_RSHIFT);
     }
-
     public static boolean isControlDown() {
-        var window = Minecraft.getInstance().getWindow();
-        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL)
-                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
+        return InputConstants.isKeyDown(InputConstants.KEY_LCONTROL)
+                || InputConstants.isKeyDown(InputConstants.KEY_RCONTROL);
     }
-
     public static boolean isAltDown() {
-        var window = Minecraft.getInstance().getWindow();
-        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT)
-                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
+        return InputConstants.isKeyDown(InputConstants.KEY_LALT)
+                || InputConstants.isKeyDown(InputConstants.KEY_RALT);
     }
 
 

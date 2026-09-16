@@ -27,7 +27,6 @@ import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.glfw.GLFW;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
 import net.nanaky.ultimate_map_atlases.client.screen.AtlasOverviewScreen;
 import net.nanaky.ultimate_map_atlases.item.MapAtlasItem;
@@ -69,29 +68,29 @@ public class MapAtlasesClient {
 
     public static final KeyMapping OPEN_ATLAS_KEYBIND = new KeyMapping(
             "key.map_atlases.open_minimap",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_M,
+            InputConstants.Type.KEYBOARD,
+            InputConstants.KEY_M,
             MAP_ATLASES_CATEGORY
     );
 
     public static final KeyMapping PLACE_PIN_KEYBIND = new KeyMapping(
             "key.map_atlases.place_pin",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_B,
+            InputConstants.Type.KEYBOARD,
+            InputConstants.KEY_B,
             MAP_ATLASES_CATEGORY
     );
 
     public static final KeyMapping INCREASE_MINIMAP_ZOOM = new KeyMapping(
             "key.map_atlases.zoom_in_minimap",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_KP_ADD,
+            InputConstants.Type.KEYBOARD,
+            InputConstants.KEY_ADD,
             MAP_ATLASES_CATEGORY
     );
 
     public static final KeyMapping DECREASE_MINIMAP_ZOOM = new KeyMapping(
             "key.map_atlases.zoom_out_minimap",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_KP_SUBTRACT,
+            InputConstants.Type.KEYBOARD,
+            InputConstants.KEY_MINUS,
             MAP_ATLASES_CATEGORY
     );
 
@@ -276,7 +275,7 @@ public class MapAtlasesClient {
     }
 
     public static void modifyTextDecorationTransform(PoseStack poseStack, float textWidth, float textScale) {
-        poseStack.mulPose(Axis.ZP.rotationDegrees(decorationRotation));
+        poseStack.rotateDegrees(Axis.ZP, decorationRotation);
         poseStack.scale(decorationTextScale, decorationTextScale, 1);
         float scaledWidth = textWidth * textScale * decorationTextScale;
         poseStack.translate(-scaledWidth / 2.0F, -4 * decorationTextScale, 0);
@@ -299,7 +298,7 @@ public class MapAtlasesClient {
 }
 
     public static void modifyDecorationTransform(PoseStack poseStack) {
-        poseStack.mulPose(Axis.ZP.rotationDegrees(decorationRotation));
+        poseStack.rotateDegrees(Axis.ZP, decorationRotation);
         poseStack.scale(decorationScale, decorationScale, 1);
     }
 

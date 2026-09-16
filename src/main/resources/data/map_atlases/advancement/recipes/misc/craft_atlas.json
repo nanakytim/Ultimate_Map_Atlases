@@ -22,7 +22,7 @@
     "has_the_recipe": {
       "trigger": "minecraft:recipe_unlocked",
       "conditions": {
-        "recipe": "map_atlases:craft_atlas"
+        "recipes": "map_atlases:craft_atlas"
       }
     }
   },

@@ -5,6 +5,7 @@ import net.nanaky.moonlight.api.platform.network.Message;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Prediction;
 import net.minecraft.world.item.ItemStack;
 import net.nanaky.ultimate_map_atlases.utils.AtlasLectern;
 
@@ -36,7 +37,7 @@ public class C2STakeAtlasPacket implements Message {
             }
             ItemStack itemstack = lectern.mapatlases$removeAtlas();
             if (!player.getInventory().add(itemstack)) {
-                player.drop(itemstack, false);
+                player.drop(itemstack, false, Prediction.SERVER_ONLY);
             }
         }
     }

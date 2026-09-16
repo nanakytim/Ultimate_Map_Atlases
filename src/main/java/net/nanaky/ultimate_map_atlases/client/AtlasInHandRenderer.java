@@ -41,7 +41,7 @@ public class AtlasInHandRenderer {
     private static final int MAP_WIDTH = 128;
     private static final MapRenderState MAP_RENDER_STATE = new MapRenderState();
 
-    public static void render(PoseStack pPoseStack, SubmitNodeCollector submitNodeCollector, int pCombinedLight,
+    public static void render(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int pCombinedLight,
                               ItemStack pStack, Minecraft mc) {
         if (mc.gui.screen() instanceof AtlasOverviewScreen) return;
 
@@ -49,15 +49,15 @@ public class AtlasInHandRenderer {
         if (state != null) {
             MapAtlasesClient.setIsDrawingAtlas(true);
             try {
-                pPoseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
-                pPoseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
-                pPoseStack.scale(MAP_PRE_ROT_SCALE, MAP_PRE_ROT_SCALE, MAP_PRE_ROT_SCALE);
-                pPoseStack.translate(MAP_GLOBAL_X_POS, MAP_GLOBAL_Y_POS, MAP_GLOBAL_Z_POS);
-                pPoseStack.scale(MAP_FINAL_SCALE, MAP_FINAL_SCALE, MAP_FINAL_SCALE);
+                poseStack.rotateDegrees(Axis.YP, 180);
+                poseStack.rotateDegrees(Axis.ZP, 180);
+                poseStack.scale(MAP_PRE_ROT_SCALE, MAP_PRE_ROT_SCALE, MAP_PRE_ROT_SCALE);
+                poseStack.translate(MAP_GLOBAL_X_POS, MAP_GLOBAL_Y_POS, MAP_GLOBAL_Z_POS);
+                poseStack.scale(MAP_FINAL_SCALE, MAP_FINAL_SCALE, MAP_FINAL_SCALE);
 
                 MapItemSavedData data = state.data;
                 submitNodeCollector.submitCustomGeometry(
-                        pPoseStack,
+                        poseStack,
                         data == null ? MAP_BACKGROUND : MAP_BACKGROUND_CHECKERBOARD,
                         (pose, vertexConsumer) -> {
                             vertexConsumer.addVertex(pose, -MAP_BORDER, MAP_HEIGHT + MAP_BORDER, 0.0F)
@@ -79,7 +79,7 @@ public class AtlasInHandRenderer {
                         }
                 );
                 if (data != null) {
-                    renderMapData(pPoseStack, submitNodeCollector, pCombinedLight, mc, state, data);
+                    renderMapData(poseStack, submitNodeCollector, pCombinedLight, mc, state, data);
                 }
             } finally {
                 MapAtlasesClient.setIsDrawingAtlas(false);

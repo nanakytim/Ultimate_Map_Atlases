@@ -1,5 +1,6 @@
 package net.nanaky.ultimate_map_atlases.client.screen;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -10,7 +11,6 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
-import org.lwjgl.glfw.GLFW;
 import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
 import net.nanaky.ultimate_map_atlases.integration.moonlight.ClientMarkersRenderer;
 
@@ -114,7 +114,7 @@ public class PinNameBox extends EditBox {
 
     @Override
     public boolean keyPressed(KeyEvent event) {
-        if ((event.key() == GLFW.GLFW_KEY_ENTER || event.key() == GLFW.GLFW_KEY_KP_ENTER) && active && canConsumeInput()) {
+        if ((event.key() == InputConstants.KEY_NUMPADENTER || event.key() == InputConstants.KEY_NUMPADENTER) && active && canConsumeInput()) {
             onDone.run();
             scrollVisibleCounter = 0;
             displayIndex = currentIndex;

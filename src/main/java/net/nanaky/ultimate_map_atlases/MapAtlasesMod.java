@@ -137,7 +137,7 @@ public class MapAtlasesMod {
     }
 
     private static Holder<MapDecorationType> registerDecorationType(String registryName, Identifier assetId) {
-        MapDecorationType type = new MapDecorationType(assetId, false, -1, false, false);
+        MapDecorationType type = new MapDecorationType(assetId, false, false);
         return Registry.registerForHolder(
                 BuiltInRegistries.MAP_DECORATION_TYPE,
                 Identifier.fromNamespaceAndPath(MOD_ID, registryName),

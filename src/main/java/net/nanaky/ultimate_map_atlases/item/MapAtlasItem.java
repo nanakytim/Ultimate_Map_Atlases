@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.util.Prediction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -57,7 +58,7 @@ public class MapAtlasItem extends Item {
         if (removed) {
             ItemStack item = holder.createExistingMapItem();
             if (!player.getInventory().add(item)) {
-                player.drop(item, false);
+                player.drop(item, false, Prediction.SERVER_ONLY);
             }
         }
     }

@@ -2,6 +2,7 @@ package net.nanaky.ultimate_map_atlases.mixin;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Prediction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -56,7 +57,7 @@ public abstract class LecternBlockMixin extends Block {
                 LecternBlockEntity lbe = (LecternBlockEntity) al;
                 ItemStack atlas = lbe.getBook();
                 if (!player.getInventory().add(atlas)) {
-                    player.drop(atlas, false);
+                    player.drop(atlas, false, Prediction.SERVER_ONLY);
                 }
                 al.mapatlases$removeAtlas();
                 cir.setReturnValue(level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER);

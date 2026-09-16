@@ -8,6 +8,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.world.item.MapItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.BedBlock;
@@ -53,7 +54,7 @@ public class BlockMarkerEvents {
             if (!(state.getBlock() instanceof BedBlock) && !(state.getBlock() instanceof CampfireBlock)) {
                 return InteractionResult.PASS;
             }
-            serverPlayer.swing(hand, true);
+            serverPlayer.swing(hand, SwingAnimation.DEFAULT, true);
             return InteractionResult.SUCCESS;
         });
 

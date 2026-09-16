@@ -4,8 +4,9 @@ import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemInHandRenderer;
+import net.minecraft.client.renderer.FirstPersonHandsAndItemsRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.state.level.FirstPersonHandsAndItemsRenderState;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,18 +19,18 @@ import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
 import net.nanaky.ultimate_map_atlases.client.AtlasInHandRenderer;
 import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
 
-@Mixin(ItemInHandRenderer.class)
+@Mixin(FirstPersonHandsAndItemsRenderer.class)
 public abstract class ItemInHandRendererMixin {
 
     @Shadow @Final private Minecraft minecraft;
     @Unique
     private boolean mapatlases$renderingAtlas = false;
 
-    @ModifyExpressionValue(method = "submitArmWithItem", at =  @At(value = "INVOKE",
+    @ModifyExpressionValue(method = "submitArmWithItem", at = @At(value = "INVOKE",
             ordinal = 0,
             target = "Lnet/minecraft/world/item/ItemStack;has(Lnet/minecraft/core/component/DataComponentType;)Z"))
-    public boolean renderMapAtlasItem(boolean isNormalMap, @Local ItemStack pStack){
-        if(pStack.is(MapAtlasesMod.MAP_ATLAS.get()) && UltimateMapAtlasesClientConfigManager.INSTANCE.inHandMode.isOn(pStack)){
+    public boolean renderMapAtlasItem(boolean isNormalMap, @Local ItemStack pStack) {
+        if (pStack.is(MapAtlasesMod.MAP_ATLAS.get()) && UltimateMapAtlasesClientConfigManager.INSTANCE.inHandMode.isOn(pStack)) {
             mapatlases$renderingAtlas = true;
             return true;
         }
@@ -37,10 +38,11 @@ public abstract class ItemInHandRendererMixin {
     }
 
     @Inject(method = "renderMap", at = @At("HEAD"), cancellable = true)
-    public void renderMapAtlasInHand(PoseStack pPoseStack, SubmitNodeCollector submitNodeCollector, int pCombinedLight,
-                                     ItemStack pStack, CallbackInfo ci){
-        if(mapatlases$renderingAtlas){
-            AtlasInHandRenderer.render(pPoseStack, submitNodeCollector, pCombinedLight, pStack, this.minecraft);
+    public void renderMapAtlasInHand(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int pCombinedLight,
+                                      ItemStack pStack, boolean mainHand, FirstPersonHandsAndItemsRenderState state,
+                                      CallbackInfo ci) {
+        if (mapatlases$renderingAtlas) {
+            AtlasInHandRenderer.render(poseStack, submitNodeCollector, pCombinedLight, pStack, this.minecraft);
             mapatlases$renderingAtlas = false;
             ci.cancel();
         }

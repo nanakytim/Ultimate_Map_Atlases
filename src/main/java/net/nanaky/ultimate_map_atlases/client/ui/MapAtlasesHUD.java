@@ -321,10 +321,11 @@ public class MapAtlasesHUD extends AbstractAtlasWidget implements HudElement {
         boolean local = UltimateMapAtlasesClientConfigManager.INSTANCE.drawMinimapChunkCoords;
         if (global || local) {
             if (hasCompass(mc.player)) {
-                BlockPos pos = new BlockPos(new Vec3i(
+                BlockPos pos = new BlockPos(
                         towardsZero(mc.player.position().x),
                         towardsZero(mc.player.position().y),
-                        towardsZero(mc.player.position().z)));
+                        towardsZero(mc.player.position().z)
+                );
                 if (global) {
                     drawMapComponentCoords(graphics, font, screenWidth, x, textScaling, pos, false);
                     textHeightOffset += 10;
