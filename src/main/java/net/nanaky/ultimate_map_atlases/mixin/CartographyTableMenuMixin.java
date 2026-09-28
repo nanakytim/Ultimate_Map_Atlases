@@ -131,13 +131,26 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
         if (index == 2) {
             Slot resultSlot = this.slots.get(2);
             if (resultSlot.hasItem()) {
-                ItemStack result = resultSlot.getItem().copy();
-                resultSlot.onTake(player, resultSlot.getItem());
-                player.getInventory().add(result);
+                ItemStack stack = resultSlot.getItem();
+                ItemStack clicked = stack.copy();
+
+                stack.getItem().onCraftedBy(stack, player);
+                player.getInventory().add(stack);
+
+                if (stack.isEmpty()) {
+                    resultSlot.setByPlayer(ItemStack.EMPTY);
+                }
+                resultSlot.setChanged();
+
+                if (stack.getCount() != clicked.getCount()) {
+                    resultSlot.onTake(player, stack);
+                    this.broadcastChanges();
+                }
             }
             info.setReturnValue(ItemStack.EMPTY);
             return;
         }
+
         if (index >= 0 && index <= 2) return;
 
         Slot slot = this.slots.get(index);
@@ -166,6 +179,20 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
             } else {
                 info.setReturnValue(ItemStack.EMPTY);
             }
+            return;
+        }
+
+        if (stack.getItem() == Items.MAP) {
+            if (this.slots.get(0).hasItem() &&
+                (this.slots.get(0).getItem().is(MapAtlasesMod.MAP_ATLAS.get()) ||
+                this.slots.get(0).getItem().getItem() == Items.FILLED_MAP)) {
+                if (!this.moveItemStackTo(stack, 1, 2, false)) {
+                    info.setReturnValue(ItemStack.EMPTY);
+                }
+            } else {
+                info.setReturnValue(ItemStack.EMPTY);
+            }
+            info.setReturnValue(ItemStack.EMPTY);
             return;
         }
 
