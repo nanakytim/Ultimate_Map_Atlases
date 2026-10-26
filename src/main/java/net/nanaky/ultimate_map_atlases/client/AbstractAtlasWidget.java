@@ -316,12 +316,10 @@ protected void renderPriorityMarkers(GuiGraphicsExtractor graphics, Font font, P
             } else if (MoonlightCompat.isBlockMarkerDecoration(e.getKey(), dec)) {
                 removed.add(e);
             } else if (type.equals(MapDecorationTypes.PLAYER_OFF_MAP) || type.equals(MapDecorationTypes.PLAYER_OFF_LIMITS)) {
-                if (data == mapWherePlayerIs.data && drawPlayerIcons) {
-                    removed.add(e);
-                    added.add(new AbstractMap.SimpleEntry<>(e.getKey(), new MapDecoration(MapDecorationTypes.PLAYER,
-                            dec.x(), dec.y(), getPlayerMarkerRot(player), dec.name())));
-                } else {
-                    removed.add(e);
+                removed.add(e);
+                if (data == mapWherePlayerIs.data && drawPlayerIcons && !drawMapDecorationsFallback) {
+                        added.add(new AbstractMap.SimpleEntry<>(e.getKey(), new MapDecoration(MapDecorationTypes.PLAYER,
+                                dec.x(), dec.y(), getPlayerMarkerRot(player), dec.name())));
                 }
             } else if (type.equals(MapDecorationTypes.PLAYER)) {
                 if (!drawPlayerIcons || data != mapWherePlayerIs.data || drawMapDecorationsFallback) {

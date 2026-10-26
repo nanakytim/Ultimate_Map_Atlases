@@ -55,13 +55,10 @@ public abstract class LecternBlockEntityMixin extends BlockEntity implements Atl
 
     @Override
     public boolean mapatlases$setAtlas(Player player, ItemStack atlas) {
-        if(LecternBlock.tryPlaceBook(
-                player,
-                level,
-                worldPosition,
-                getBlockState(),
-                atlas
-        )){
+       if (LecternBlock.tryPlaceBook(player, level, worldPosition, getBlockState(), atlas)) {
+            if (level != null && level.isClientSide()) {
+                this.book = atlas.copyWithCount(1);
+            }
             this.mapatlases$hasAtlas = true;
             this.setChanged();
             if (this.level != null) {

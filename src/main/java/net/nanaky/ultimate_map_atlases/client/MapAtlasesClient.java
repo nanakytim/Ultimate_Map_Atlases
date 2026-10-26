@@ -116,6 +116,7 @@ public class MapAtlasesClient {
     private static float decorationScale = 1.0F;
     private static float decorationTextScale = 1.0F;
     private static float decorationRotation;
+    private static long pendingSinceMs;
 
     public static void init() {
         MapAtlasesNetworking.initClient();
@@ -254,6 +255,7 @@ public class MapAtlasesClient {
             minecraft.gui.setScreen(new AtlasOverviewScreen(atlas, lectern, pinOnly));
             pendingOpenScreen = null;
         } else if (persistedIds > 0) {
+            if (pendingOpenScreen == null) pendingSinceMs = System.currentTimeMillis();
             pendingOpenScreen = new PendingOpenScreen(source, hand, lecternPos, pinOnly);
         }
     }
@@ -264,6 +266,10 @@ public class MapAtlasesClient {
 
     private static void tryOpenPendingScreen() {
         if (pendingOpenScreen == null) {
+            return;
+        }
+        if (System.currentTimeMillis() - pendingSinceMs > 5000) {
+            pendingOpenScreen = null;
             return;
         }
         PendingOpenScreen pending = pendingOpenScreen;
