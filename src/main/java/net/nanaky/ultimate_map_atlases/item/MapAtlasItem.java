@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundMapItemDataPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -23,6 +24,7 @@ import net.minecraft.world.level.saveddata.maps.MapId;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.saveddata.maps.MapDecoration;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
@@ -33,10 +35,13 @@ import net.nanaky.ultimate_map_atlases.map_collection.MapCollection;
 import net.nanaky.ultimate_map_atlases.map_collection.MapKey;
 import net.nanaky.ultimate_map_atlases.networking.C2S2COpenAtlasScreenPacket;
 import net.nanaky.ultimate_map_atlases.networking.MapAtlasesNetworking;
+import net.nanaky.ultimate_map_atlases.networking.S2CMapPacketWrapper;
 import net.nanaky.ultimate_map_atlases.utils.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.Optional;
 
 public class MapAtlasItem extends Item {
 
@@ -62,6 +67,18 @@ public class MapAtlasItem extends Item {
         }
     }
 
+    private static void sendFullMapData(ServerPlayer player, MapDataHolder info) {
+        MapItemSavedData data = info.data;
+        List<MapDecoration> decorations = new ArrayList<>();
+        data.getDecorations().forEach(decorations::add);
+
+        ClientboundMapItemDataPacket packet = new ClientboundMapItemDataPacket(
+                new MapId(info.id), data.scale, data.locked,
+                Optional.of(decorations),
+                Optional.of(new MapItemSavedData.MapPatch(0, 0, 128, 128, data.colors)));
+
+        MapAtlasesNetworking.CHANNEL.sendToClientPlayer(player, new S2CMapPacketWrapper(data, packet));
+    }
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, TooltipDisplay tooltipDisplay,
@@ -188,6 +205,11 @@ public class MapAtlasItem extends Item {
         IMapCollection maps = MapAtlasItem.getMaps(atlas, player.level());
         for (var info : maps.getAll()) {
             MapAtlasesAccessUtils.updateMapDataAndSync(info, player, atlas, TriState.SET_TRUE);
+        }
+        if (source == C2S2COpenAtlasScreenPacket.OpenSource.LECTERN) {
+            for (var info : maps.getAll()) {
+                sendFullMapData(player, info);
+            }
         }
         player.inventoryMenu.broadcastFullState();
         if (player.containerMenu != player.inventoryMenu) {

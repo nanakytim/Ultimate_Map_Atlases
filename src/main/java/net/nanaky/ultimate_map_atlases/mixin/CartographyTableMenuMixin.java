@@ -1,6 +1,7 @@
 package net.nanaky.ultimate_map_atlases.mixin;
 
 import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
@@ -18,10 +19,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import net.nanaky.ultimate_map_atlases.MapAtlasesMod;
 import net.nanaky.ultimate_map_atlases.PlatStuff;
 import net.nanaky.ultimate_map_atlases.client.MapAtlasesClient;
-import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesClientConfigManager;
 import net.nanaky.ultimate_map_atlases.config.UltimateMapAtlasesServerConfigManager;
 import net.nanaky.ultimate_map_atlases.item.MapAtlasItem;
 import net.nanaky.ultimate_map_atlases.map_collection.IMapCollection;
+import net.nanaky.ultimate_map_atlases.utils.AtlasBulkResultSlot;
 import net.nanaky.ultimate_map_atlases.utils.AtlasCartographyTable;
 import net.nanaky.ultimate_map_atlases.utils.MapAtlasesAccessUtils;
 import net.nanaky.ultimate_map_atlases.utils.MapDataHolder;
@@ -54,6 +55,9 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
     @Unique
     private Slice mapatlases$selectedSlice;
 
+    @Unique
+    private int mapatlases$extraBottomConsumed = 0;
+
     protected CartographyTableMenuMixin(@Nullable MenuType<?> arg, int i) {
         super(arg, i);
     }
@@ -61,7 +65,10 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
 
     @Inject(method = "setupResultSlot", at = @At("HEAD"), cancellable = true)
     void mapAtlas$UpdateResult(ItemStack topItem, ItemStack bottomItem, ItemStack oldResult, CallbackInfo info) {
-        if (topItem.getCount() > 1 || bottomItem.getCount() > 1) {
+        boolean addingEmptyMaps = bottomItem.is(Items.MAP)
+                || (UltimateMapAtlasesServerConfigManager.INSTANCE.acceptPaperForEmptyMaps && bottomItem.is(Items.PAPER));
+
+        if (topItem.getCount() > 1 || (bottomItem.getCount() > 1 && !addingEmptyMaps)) {
             this.resultContainer.setItem(CartographyTableMenu.RESULT_SLOT, ItemStack.EMPTY);
             info.cancel();
             return;
@@ -101,12 +108,12 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
             });
 
         }
-        else if (bottomItem.getItem() == Items.MAP
-                || (UltimateMapAtlasesServerConfigManager.INSTANCE.acceptPaperForEmptyMaps && bottomItem.getItem() == Items.PAPER)) {
+        else if (addingEmptyMaps) {
             this.access.execute((world, blockPos) -> {
                 ItemStack result = topItem.copy();
                 int amountToAdd = MapAtlasesAccessUtils.getMapCountToAdd(topItem, bottomItem, world);
                 MapAtlasItem.increaseEmptyMaps(result, amountToAdd);
+                mapatlases$extraBottomConsumed = Math.max(0, Math.min(amountToAdd, bottomItem.getCount()) - 1);
                 this.resultContainer.setItem(CartographyTableMenu.RESULT_SLOT, result);
                 this.broadcastChanges();
                 info.cancel();
@@ -199,6 +206,15 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
         if (!this.moveItemStackTo(stack, 0, 1, false)) {
             info.setReturnValue(ItemStack.EMPTY);
         }
+    }
+
+    @Inject(method = "<init>(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/inventory/ContainerLevelAccess;)V",
+            at = @At("TAIL"))
+    private void mapatlases$wrapResultSlot(int id, Inventory inv, ContainerLevelAccess levelAccess, CallbackInfo ci) {
+        this.slots.set(CartographyTableMenu.RESULT_SLOT, new AtlasBulkResultSlot(
+                this.slots.get(CartographyTableMenu.RESULT_SLOT),
+                this.slots.get(1),
+                () -> mapatlases$extraBottomConsumed));
     }
 
     @Override
