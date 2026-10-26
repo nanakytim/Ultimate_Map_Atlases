@@ -67,7 +67,7 @@ public abstract class CartographyTableMenuMixin extends AbstractContainerMenu im
     void mapAtlas$UpdateResult(ItemStack topItem, ItemStack bottomItem, ItemStack oldResult, CallbackInfo info) {
         mapatlases$extraBottomConsumed = 0;
         boolean addingEmptyMaps = bottomItem.is(Items.MAP)
-                || (MapAtlasesConfig.acceptPaperForEmptyMaps.get() && bottomItem.is(Items.PAPER));
+                || (UltimateMapAtlasesServerConfigManager.INSTANCE.acceptPaperForEmptyMaps && bottomItem.is(Items.PAPER));
 
         if (topItem.getCount() > 1 || (bottomItem.getCount() > 1 && !addingEmptyMaps)) {
             this.resultContainer.setItem(CartographyTableMenu.RESULT_SLOT, ItemStack.EMPTY);
