@@ -1,4 +1,4 @@
-  ## This is a 26.1 Fabric-only fork of the Original Map Atlases.
+  ## This is a Fabric-only fork of the Original Map Atlases.
 <p align="center">
   </br></br>
   <img src="https://github.com/Pepperoni-Jabroni/MapAtlases/assets/17690401/3c934d54-99ca-4f66-b3fd-5865ea2a3d98">
