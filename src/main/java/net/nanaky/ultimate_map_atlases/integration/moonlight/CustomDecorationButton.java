@@ -1,5 +1,7 @@
 package net.nanaky.ultimate_map_atlases.integration.moonlight;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
@@ -63,7 +65,7 @@ public class CustomDecorationButton extends DecorationBookmarkButton {
 
     @Override
     public void onClick(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
-        if (event.button() == 1 || control) {
+        if (event.button() == InputConstants.MOUSE_BUTTON_RIGHT || control) {
             focusMarker();
             return;
         }

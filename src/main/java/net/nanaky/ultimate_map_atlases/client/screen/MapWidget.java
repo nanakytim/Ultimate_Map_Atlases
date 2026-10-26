@@ -1,5 +1,6 @@
 package net.nanaky.ultimate_map_atlases.client.screen;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.nanaky.moonlight.api.platform.PlatHelper;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -206,7 +207,7 @@ public class MapWidget extends AbstractAtlasWidget implements Renderable, GuiEve
     }
 
     public boolean mouseDragged(MouseButtonEvent event, double deltaX, double deltaY) {
-        if (event.button() == 0) {
+        if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
             cumulativeMouseX += deltaX;
             cumulativeMouseY += deltaY;
             double newXCenter;

@@ -10,6 +10,8 @@ import net.nanaky.ultimate_map_atlases.utils.Slice;
 
 import static net.nanaky.ultimate_map_atlases.client.MapAtlasesClient.ATLAS_BACKGROUND_TEXTURE;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 public class SliceBookmarkButton extends BookmarkButton {
 
     private static final int BUTTON_H = 21;
@@ -75,6 +77,6 @@ public class SliceBookmarkButton extends BookmarkButton {
 
     @Override
     protected boolean isValidClickButton(net.minecraft.client.input.MouseButtonInfo button) {
-        return hasMoreThan1Type && button.button() == 0;
+        return hasMoreThan1Type && button.button() == InputConstants.MOUSE_BUTTON_LEFT;
     }
 }
